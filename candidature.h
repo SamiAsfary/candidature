@@ -5,10 +5,14 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
 
 #define CMD_NB 4
 
-typedef uint8_t (* functionCmd_t)(char * argv[], int argc);
+typedef void (* functionCmd_t)(char * argv[], int argc);
 
 void newCd(char *argv[],int argc);
 void statusCd(char *argv[],int argc);
