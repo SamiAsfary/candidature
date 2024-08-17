@@ -15,10 +15,8 @@ const functionCmd_t commandFunc[] = {
 };
 
 void candidatureCmd(char *argv[],int argc){
-
     for(int loop = 0; loop < CMD_NB; loop++){
         if(!strncmp(argv[0],commandStr[loop],strlen(commandStr[loop]))){
-            
             commandFunc[loop](argv,argc);
         }
     }
@@ -34,13 +32,10 @@ void newCd(char *argv[], int argc){
         exit(EXIT_FAILURE);
     }
     char * path = malloc(strlen(argv[1])+4); // argv[1] + \Cd1
-    
     struct stat st = {0};
-    if (stat(argv[1], &st) == -1) {
+    if(stat(argv[1], &st) == -1) {
         sprintf(path,"%s/Cd1",argv[1]);
         if (mkdir(argv[1], 0777) != 0 || mkdir(path, 0777) != 0){
-            printf("Value of errno: %d\n", errno);
-            perror("Error : ");
             free(path);
             exit(EXIT_FAILURE);
         }
@@ -48,8 +43,17 @@ void newCd(char *argv[], int argc){
         free(path);
         exit(EXIT_SUCCESS);
     }
-    
-    write(STDOUT_FILENO,"The folder already exists\n",strlen("The folder already exists\n"));
+    int i = 0;
+    do{
+        i++;
+        sprintf(path,"%s/Cd%d",argv[1],i);
+    }while( stat(path, &st) != 0 && i < 10);
+    printf("\n%s\n",path);
+    if (mkdir(path, 0777) == 0){
+        write(STDOUT_FILENO,"The folder as been created\n",strlen("The folder as been created\n"));
+        free(path);
+        exit(EXIT_SUCCESS);
+    }
     free(path);
     exit(EXIT_FAILURE);
 }

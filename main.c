@@ -96,7 +96,10 @@ int main(){
 		
 		//attente de la fin du processus fils et recuperation du status de sortie du processus fils
 		wait(&returnStatus);
-
+		if(returnStatus != 0){
+			printf("Value of standard error : %d\n", errno);
+            perror("Error ");
+		}
 		dup2(saved_stdout, STDOUT_FILENO);
 		dup2(saved_stdin, STDIN_FILENO);
 		
