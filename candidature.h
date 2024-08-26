@@ -12,10 +12,10 @@
 #include <fcntl.h>
 
 #define CMD_NB 4
+#define JSON_PERM (S_IRWXU|S_IRWXG|S_IRWXO)
 
 typedef void (* functionCmd_t)(char * argv[], int argc);
 
-void createJSON(char *argv[],int argc);
 void newCd(char *argv[],int argc);
 void statusCd(char *argv[],int argc);
 void updateCd(char *argv[],int argc);

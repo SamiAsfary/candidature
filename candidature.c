@@ -25,15 +25,54 @@ static void initJSON(char *entreprise, char *start){
         "Step",
         "End", "Ongoing"
     );
-    json_t* jd = json_pack("{s: s, s: [O]}","entreprise",entreprise, "applications",application0);
-    //int fd = create("test3/truc.json", 0x777);
+    json_t* jd = json_pack("{s: s, s: i, s: [O]}","entreprise",entreprise,"Cd Total",1 , "applications",application0);
     sprintf(buffer, "%s/Cd.json", entreprise);
-    int fd = open(buffer, O_RDWR | O_CREAT, 0x777);
+    int fd = open(buffer, O_RDWR | O_CREAT, JSON_PERM);
     if(fd == -1){
         exit(EXIT_FAILURE);
     }
     json_dumpfd(jd, fd, JSON_INDENT(4));
+    
+    close(fd);
     free(buffer);
+}
+
+static void addingJSON(char *entreprise, char *start,int index){
+    char* buffer;
+    json_error_t error;
+    buffer = malloc(strlen(entreprise)+9); // entreprise + /Cd.json
+    sprintf(buffer,"%s/Cd.json",entreprise);
+    int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
+    if(fd == -1){
+        perror("Erreur");
+        exit(EXIT_FAILURE);
+    }
+    json_t * jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    if(!jd) {
+        //TODO : implement error handling
+    }
+    close(fd);
+
+    fd = open(buffer, O_RDWR | O_TRUNC | O_CREAT, JSON_PERM);
+    json_t *arr1 = json_array(); 
+    int test;
+
+    
+
+    json_unpack(jd,"{s: s, s: i, s: o","entreprise",entreprise,"Cd Total", &test, "applications", &arr1);
+    if(index != test+1){}
+    json_object_set(jd,"Cd Total", json_integer(test + 1));
+    json_t* application = json_pack("{ s: i, s: s, s: [], s: s}",
+        "Index", index,
+        "Start", start,
+        "Step",
+        "End", "Ongoing"
+    );
+    json_array_append(arr1, application);
+    json_dumpfd(jd, fd, JSON_INDENT(4));
+    close(fd);
+    free(buffer);
+    exit(3);
 }
 
 void candidatureCmd(char *argv[],int argc){
@@ -57,7 +96,7 @@ void newCd(char *argv[], int argc){
     struct stat st = {0};
     if(stat(argv[1], &st) == -1) {
         sprintf(path,"%s/Cd1",argv[1]);
-        if (mkdir(argv[1], 0777) != 0 || mkdir(path, 0777) != 0){
+        if (mkdir(argv[1], JSON_PERM) != 0 || mkdir(path, JSON_PERM) != 0){
             free(path);
             exit(EXIT_FAILURE);
         }
@@ -70,9 +109,10 @@ void newCd(char *argv[], int argc){
     do{
         i++;
         sprintf(path,"%s/Cd%d",argv[1],i);
-    }while( stat(path, &st) != 0 && i < 10);
-    printf("\n%s\n",path);
-    if (mkdir(path, 0777) == 0){
+    }while( stat(path, &st) == 0 && i < 10);
+    printf("\npath : %s\n",path);
+    addingJSON(argv[1],"Applied to offer",i);
+    if (mkdir(path, JSON_PERM) == 0){
         write(STDOUT_FILENO,"The folder as been created\n",strlen("The folder as been created\n"));
         free(path);
         exit(EXIT_SUCCESS);
