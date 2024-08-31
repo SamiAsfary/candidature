@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <dirent.h> 
+#include <stdio.h> 
 
 #define CMD_NB 4
 #define JSON_PERM (S_IRWXU|S_IRWXG|S_IRWXO)
@@ -18,7 +20,7 @@ typedef void (* functionCmd_t)(char * argv[], int argc);
 
 void newCd(char *argv[],int argc);
 void statusCd(char *argv[],int argc);
-void updateCd(char *argv[],int argc);
+void updateCds(char *argv[],int argc);
 void lsCd(char *argv[],int argc);
 
 void candidatureCmd(char *argv[],int argc);

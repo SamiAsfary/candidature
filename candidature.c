@@ -6,14 +6,14 @@ const char* commandStr[] = {
     "newCd",
     "status",
     "lsCd",
-    "updateCd"
+    "updateCds"
 };
 
 const functionCmd_t commandFunc[] = {
     &newCd,
     &statusCd,
     &lsCd,
-    &updateCd
+    &updateCds
 };
 
 static void initJSON(char *entreprise, char *start){
@@ -56,9 +56,6 @@ static void addingJSON(char *entreprise, char *start,int index){
     fd = open(buffer, O_RDWR | O_TRUNC | O_CREAT, JSON_PERM);
     json_t *arr1 = json_array(); 
     int test;
-
-    
-
     json_unpack(jd,"{s: s, s: i, s: o","entreprise",entreprise,"Cd Total", &test, "applications", &arr1);
     if(index != test+1){}
     json_object_set(jd,"Cd Total", json_integer(test + 1));
@@ -73,6 +70,34 @@ static void addingJSON(char *entreprise, char *start,int index){
     close(fd);
     free(buffer);
     exit(3);
+}
+
+static void checkSubfolder(char *folder){
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(folder);
+    unsigned char nbCd = 0, isJsonHere = 0; 
+    if(d == NULL){
+        exit(EXIT_FAILURE);
+    }
+    while ((dir = readdir(d)) != NULL) {
+        if(dir->d_type == 4 && !strncmp("Cd", dir->d_name,2)){
+            nbCd++;
+        }else if(dir->d_type == 8 && !strncmp("Cd.json", dir->d_name,7)){
+            isJsonHere = 1;
+        }
+    }
+    closedir(d);
+    printf("In %s there is %u Cd\n", folder, nbCd);
+    if(isJsonHere){
+        printf("And There is a JSON file\n");
+    }else{
+        initJSON(folder, "Applied to offer");
+        for(int cd = 2; cd <= nbCd; cd++){
+            addingJSON(folder,"Applied to offer",cd);
+        }
+    }
+    
 }
 
 void candidatureCmd(char *argv[],int argc){
@@ -125,10 +150,24 @@ void statusCd(char *argv[],int argc){
     argv[argc-1] = argv[argc-1];
 }
 
-void updateCd(char *argv[],int argc){
+void updateCds(char *argv[],int argc){
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(".");
+    if (d) {
+    while ((dir = readdir(d)) != NULL) {
+        if(dir->d_type == 4 && dir->d_name[0] != '.'){
+            printf("%u : %s\n",dir->d_type, dir->d_name);
+            checkSubfolder(dir->d_name);
+        }
+    }
+    closedir(d);
+    }
     argv[argc-1] = argv[argc-1];
+    exit(EXIT_SUCCESS);
 }
 
 void lsCd(char *argv[],int argc){
     argv[argc-1] = argv[argc-1];
 }
+
