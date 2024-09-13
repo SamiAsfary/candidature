@@ -2,14 +2,14 @@
 #include <jansson.h>
 
 
-const char* commandStr[] = {
+const char* commandStr[CMD_NB] = {
     "newCd",
     "status",
     "lsCd",
     "updateCds"
 };
 
-const functionCmd_t commandFunc[] = {
+const functionCmd_t commandFunc[CMD_NB] = {
     &newCd,
     &statusCd,
     &lsCd,
@@ -33,6 +33,22 @@ static void initJSON(char *entreprise, char *start){
     }
     json_dumpfd(jd, fd, JSON_INDENT(4));
     
+    close(fd);
+    free(buffer);
+}
+
+static void checkSubfolderJson(char *folder,int nbCd){
+    char * buffer;
+    int fd;
+    json_t * jd;
+    json_error_t error;
+    json_t *arr1 = json_array(); 
+
+    sprintf(buffer, "%s/Cd.json",folder);
+
+    fd = open(buffer, O_RDONLY);
+    jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    json_unpack(jd,"{s: s, s: i, s: o","entreprise",folder,"Cd Total", nbCd, "applications", &arr1);
     close(fd);
     free(buffer);
 }
@@ -69,7 +85,6 @@ static void addingJSON(char *entreprise, char *start,int index){
     json_dumpfd(jd, fd, JSON_INDENT(4));
     close(fd);
     free(buffer);
-    exit(3);
 }
 
 static void checkSubfolder(char *folder){
@@ -90,7 +105,7 @@ static void checkSubfolder(char *folder){
     closedir(d);
     printf("In %s there is %u Cd\n", folder, nbCd);
     if(isJsonHere){
-        printf("And There is a JSON file\n");
+        
     }else{
         initJSON(folder, "Applied to offer");
         for(int cd = 2; cd <= nbCd; cd++){
