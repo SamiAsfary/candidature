@@ -83,7 +83,7 @@ static void initJSON(char *entreprise, char *start){
     close(fd);
     free(buffer);
 }
-
+/*
 static void checkSubfolderJson(char *folder,int nbCd){
     char * buffer;
     int fd;
@@ -99,7 +99,7 @@ static void checkSubfolderJson(char *folder,int nbCd){
     close(fd);
     free(buffer);
 }
-
+*/
 static void addingJSON(char *entreprise, char *start,int index){
     char* buffer;
     json_error_t error;
@@ -162,6 +162,52 @@ static void checkSubfolder(char *folder){
     
 }
 
+static void displayCd(char* company, int index){
+    char* buffer;
+    json_error_t error;
+    buffer = malloc(strlen(company)+9); // entreprise + /Cd.json
+    sprintf(buffer,"%s/Cd.json",company);
+    int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
+    if(fd == -1){
+        perror("Erreur");
+        exit(EXIT_FAILURE);
+    }
+    json_t * jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    jd =jd;
+    index=index;
+}
+
+static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEnding){
+    char* buffer;
+    json_error_t error;
+    buffer = malloc(strlen(company)+9); // entreprise + /Cd.json
+    sprintf(buffer,"%s/Cd.json",company);
+    int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
+    if(fd == -1){
+        perror("Erreur");
+        exit(EXIT_FAILURE);
+    }
+
+    json_t *jd, *app_arr, *app, *steps;
+    jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    app_arr = json_object_get(jd,"applications");
+    app = json_array_get(app_arr,index);
+    if(isCdEnding == 0){
+        steps = json_object_get(app,"Step");
+        json_array_append(steps,json_string(addon));
+        json_object_set(app,"Step",steps);
+    }else{
+        json_object_set(app,"End",json_string(addon));
+    }
+    json_array_set(app_arr,index,app);
+    json_object_set(jd,"applications",app_arr);
+
+    fd = open(buffer, O_RDWR | O_TRUNC | O_CREAT, JSON_PERM);
+    json_dumpfd(jd, fd, JSON_INDENT(4));
+    close(fd);
+    free(buffer);
+}
+
 void candidatureCmd(char *argv[],int argc){
     for(int loop = 0; loop < CMD_NB; loop++){
         if(!strncmp(argv[0],commandStr[loop],strlen(commandStr[loop]))){
@@ -222,8 +268,56 @@ void newCd(char *argv[], int argc){
 }
 
 void statusCd(char *argv[],int argc){
+    
     uint8_t options = testForOptions(argv[1],statusCd_sel);
-    argv[argc-1] = argv[argc-1];
+
+    if(argc < 3 || (options != NO_OPTIONS && argc < 4)){
+        exit(EXIT_FAILURE);
+    }
+
+    if(options == NO_OPTIONS){
+        ////////////////////////////////////////////////////////////////////////   
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        exit(EXIT_SUCCESS);
+        displayCd(argv[argc-2],atoi(argv[argc-1])-1);
+    }
+
+    char* addon;
+    uint8_t isCdEnding = 0;
+    if((options&STATUSCD_DECLINED) == STATUSCD_DECLINED){
+        addon = malloc(strlen("Offer Declined")+1);
+        strcpy(addon,"Offer Declined");
+        isCdEnding = 1;
+    }else if((options&STATUSCD_ACCEPTED) == STATUSCD_ACCEPTED){
+        addon = malloc(strlen("Offer Accepted")+1);
+        strcpy(addon,"Offer Accepted");
+        isCdEnding = 1;
+    }else if((options&STATUSCD_REJECTED) == STATUSCD_REJECTED){
+        addon = malloc(strlen("Rejected")+1);
+        strcpy(addon,"Rejected");
+        isCdEnding = 1;
+    }else if((options&STATUSCD_GHOSTED) == STATUSCD_GHOSTED){
+        addon = malloc(strlen("Ghosted")+1);
+        strcpy(addon,"Ghosted");
+        isCdEnding = 1;
+    }else if((options&STATUSCD_HRINTERVIEW) == STATUSCD_HRINTERVIEW){
+        addon = malloc(strlen("HR interview")+1);
+        strcpy(addon,"HR interview");
+    }else if((options&STATUSCD_TECHINTERVIEW) == STATUSCD_TECHINTERVIEW){
+        addon = malloc(strlen("Technical interview")+1);
+        strcpy(addon,"Technical interview");
+    }else if((options&STATUSCD_OFFER) == STATUSCD_OFFER){
+        addon = malloc(strlen("Offer received")+1);
+        strcpy(addon,"Offer received");
+    }
+
+    addStatusCd(argv[argc-2],atoi(argv[argc-1])-1,addon,isCdEnding);
+    exit(3);
+
 }
 
 void updateCds(char *argv[],int argc){
