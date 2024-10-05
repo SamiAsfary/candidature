@@ -165,16 +165,56 @@ static void checkSubfolder(char *folder){
 static void displayCd(char* company, int index){
     char* buffer;
     json_error_t error;
-    buffer = malloc(strlen(company)+9); // entreprise + /Cd.json
+    buffer = malloc(strlen(company)+9); // entreprise + /Cd.json\0
     sprintf(buffer,"%s/Cd.json",company);
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         perror("Erreur");
         exit(EXIT_FAILURE);
     }
-    json_t * jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
-    jd =jd;
-    index=index;
+    json_t *jd, *app_arr, *app, *steps, *string;
+    jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    app_arr = json_object_get(jd,"applications");
+    app = json_array_get(app_arr,index);
+    steps = json_object_get(app,"Step");
+
+    buffer = realloc(buffer,strlen(company)+28); // The XXth application for company\r\n\0
+    char order[2];
+    switch(index%10+1){
+        case 1:
+        order[0] = 's';
+        order[1] = 't';
+        break;
+        case 2:
+        order[0] = 'n';
+        order[1] = 'd';
+        break;
+        case 3:
+        order[0] = 'r';
+        order[1] = 'd';
+        break;
+        default:
+        order[0] = 't';
+        order[1] = 'h';
+        break;
+    }
+
+    sprintf(buffer,"The %d%s application for %s\r\n",index+1,order,company);
+    write(STDOUT_FILENO,buffer,strlen(buffer));
+    write(STDOUT_FILENO,"Started with : ",strlen("Started with : "));
+    string = json_object_get(app,"Start");
+    write(STDOUT_FILENO,json_string_value(string),json_string_length(string));
+    write(STDOUT_FILENO,"\r\nCurrent Steps : [",strlen("\r\nCurrent Steps : ["));
+    for(int i = 0; i < (int)json_array_size(steps);i++){
+        write(STDOUT_FILENO,json_string_value(json_array_get(steps,i)),json_string_length(json_array_get(steps,i)));
+        if(i != (int)json_array_size(steps)-1){
+            write(STDOUT_FILENO,", ",strlen(", "));
+        }
+    }
+    write(STDOUT_FILENO,"]\r\nCurrent ending Status : ",strlen("]\r\nCurrent ending Status : "));
+    string = json_object_get(app,"End");
+    write(STDOUT_FILENO,json_string_value(string),json_string_length(string));
+    write(STDOUT_FILENO,"\n",strlen("\n"));
 }
 
 static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEnding){
@@ -276,14 +316,9 @@ void statusCd(char *argv[],int argc){
     }
 
     if(options == NO_OPTIONS){
-        ////////////////////////////////////////////////////////////////////////   
-        ////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////
-        exit(EXIT_SUCCESS);
         displayCd(argv[argc-2],atoi(argv[argc-1])-1);
+        exit(EXIT_SUCCESS);
+        
     }
 
     char* addon;
@@ -316,7 +351,7 @@ void statusCd(char *argv[],int argc){
     }
 
     addStatusCd(argv[argc-2],atoi(argv[argc-1])-1,addon,isCdEnding);
-    exit(3);
+    exit(EXIT_SUCCESS);
 
 }
 
