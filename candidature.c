@@ -2,25 +2,36 @@
 #include <jansson.h>
 
 
+const char* commandHelpShort[CMD_NB] = {
+    "Create entry for new application",
+    "Display status for each application",
+    "Display every company with how many application was done",
+    "Init json with pre-existing application",
+    "Display this message"
+};
+
 const char* commandStr[CMD_NB] = {
     "newCd",
     "status",
     "lsCd",
-    "updateCds"
+    "updateCds",
+    "helpCd"
 };
 
 const functionCmd_t commandFunc[CMD_NB] = {
     &newCd,
     &statusCd,
     &lsCd,
-    &updateCds
+    &updateCds,
+    &helpCd
 };
 
 typedef enum{
     newCd_sel,
     statusCd_sel,
     lsCd_sel,
-    updateCds_sel
+    updateCds_sel,
+    helpCd_sel
 }cmd_sel_t;
 
 static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
@@ -201,6 +212,7 @@ static void displayCd(char* company, int index){
 
     sprintf(buffer,"The %d%s application for %s\r\n",index+1,order,company);
     write(STDOUT_FILENO,buffer,strlen(buffer));
+    free(buffer);
     write(STDOUT_FILENO,"Started with : ",strlen("Started with : "));
     string = json_object_get(app,"Start");
     write(STDOUT_FILENO,json_string_value(string),json_string_length(string));
@@ -368,11 +380,25 @@ void updateCds(char *argv[],int argc){
     }
     closedir(d);
     }
-    argv[argc-1] = argv[argc-1];
     exit(EXIT_SUCCESS);
+    argv[argc-1] = argv[argc-1];
+    
 }
 
 void lsCd(char *argv[],int argc){
+    exit(EXIT_SUCCESS);
     argv[argc-1] = argv[argc-1];
 }
 
+void helpCd(char *argv[],int argc){
+    char *output;
+    int len;
+    output = malloc(277);
+    for(int i = 0; i < CMD_NB; i++){
+
+        len = sprintf(output,"%s : %s\r\n",commandStr[i],commandHelpShort[i]);
+        write(STDOUT_FILENO,output,len);
+    }
+    exit(EXIT_SUCCESS);
+    argv[argc-1] = argv[argc-1];
+}

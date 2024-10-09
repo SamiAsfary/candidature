@@ -13,7 +13,7 @@
 #include <dirent.h> 
 #include <stdio.h> 
 
-#define CMD_NB 4
+#define CMD_NB 5
 #define JSON_PERM (S_IRWXU|S_IRWXG|S_IRWXO)
 
 #define NO_OPTIONS 0b00000000
@@ -36,9 +36,16 @@
 
 typedef void (* functionCmd_t)(char * argv[], int argc);
 
+typedef struct{
+    functionCmd_t commandFunc;
+    char commandStr[15];
+    char commandHelp[256];
+}cmd_t;
+
 void newCd(char *argv[],int argc);
 void statusCd(char *argv[],int argc);
 void updateCds(char *argv[],int argc);
 void lsCd(char *argv[],int argc);
+void helpCd(char *argv[],int argc);
 
 void candidatureCmd(char *argv[],int argc);
