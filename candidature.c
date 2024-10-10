@@ -87,6 +87,8 @@ static void initJSON(char *entreprise, char *start){
     sprintf(buffer, "%s/Cd.json", entreprise);
     int fd = open(buffer, O_RDWR | O_CREAT, JSON_PERM);
     if(fd == -1){
+        free(buffer);
+        perror("Error creating JSON file ");
         exit(EXIT_FAILURE);
     }
     json_dumpfd(jd, fd, JSON_INDENT(4));
@@ -118,16 +120,25 @@ static void addingJSON(char *entreprise, char *start,int index){
     sprintf(buffer,"%s/Cd.json",entreprise);
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
-        perror("Erreur");
+        free(buffer);
+        perror("Error opening JSON file ");
         exit(EXIT_FAILURE);
     }
     json_t * jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
     if(!jd) {
-        //TODO : implement error handling
+        free(buffer);
+        close(fd);
+        perror("Error loading JSON file ");
+        exit(EXIT_FAILURE);
     }
     close(fd);
 
     fd = open(buffer, O_RDWR | O_TRUNC | O_CREAT, JSON_PERM);
+    if(fd == -1){
+        free(buffer);
+        perror("Error re-opening JSON file ");
+        exit(EXIT_FAILURE);
+    }
     json_t *arr1 = json_array(); 
     int test;
     json_unpack(jd,"{s: s, s: i, s: o","entreprise",entreprise,"Cd Total", &test, "applications", &arr1);
@@ -151,6 +162,8 @@ static void checkSubfolder(char *folder){
     d = opendir(folder);
     unsigned char nbCd = 0, isJsonHere = 0; 
     if(d == NULL){
+        char *errorStr;
+        int len = sprintf(errorStr,"Error while opening %s folder ");
         exit(EXIT_FAILURE);
     }
     while ((dir = readdir(d)) != NULL) {
@@ -170,7 +183,6 @@ static void checkSubfolder(char *folder){
             addingJSON(folder,"Applied to offer",cd);
         }
     }
-    
 }
 
 static void displayCd(char* company, int index){
@@ -180,11 +192,18 @@ static void displayCd(char* company, int index){
     sprintf(buffer,"%s/Cd.json",company);
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
-        perror("Erreur");
+        free(buffer);
+        perror("Error opening JSON file ");
         exit(EXIT_FAILURE);
     }
     json_t *jd, *app_arr, *app, *steps, *string;
     jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    if(!jd) {
+        free(buffer);
+        close(fd);
+        perror("Error loading JSON file ");
+        exit(EXIT_FAILURE);
+    }
     app_arr = json_object_get(jd,"applications");
     app = json_array_get(app_arr,index);
     steps = json_object_get(app,"Step");
@@ -236,12 +255,18 @@ static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEndin
     sprintf(buffer,"%s/Cd.json",company);
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
-        perror("Erreur");
+        free(buffer);
+        perror("Error opening JSON file ");
         exit(EXIT_FAILURE);
     }
-
     json_t *jd, *app_arr, *app, *steps;
     jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    if(!jd) {
+        free(buffer);
+        close(fd);
+        perror("Error loading JSON file ");
+        exit(EXIT_FAILURE);
+    }
     app_arr = json_object_get(jd,"applications");
     app = json_array_get(app_arr,index);
     if(isCdEnding == 0){
@@ -255,6 +280,11 @@ static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEndin
     json_object_set(jd,"applications",app_arr);
 
     fd = open(buffer, O_RDWR | O_TRUNC | O_CREAT, JSON_PERM);
+    if(fd == -1){
+        free(buffer);
+        perror("Error re-opening JSON file ");
+        exit(EXIT_FAILURE);
+    }
     json_dumpfd(jd, fd, JSON_INDENT(4));
     close(fd);
     free(buffer);
@@ -371,6 +401,11 @@ void updateCds(char *argv[],int argc){
     DIR *d;
     struct dirent *dir;
     d = opendir(".");
+    if(d == NULL){
+        char *errorStr;
+        int len = sprintf(errorStr,"Error while opening %s folder ");
+        exit(EXIT_FAILURE);
+    }
     if (d) {
     while ((dir = readdir(d)) != NULL) {
         if(dir->d_type == 4 && dir->d_name[0] != '.'){
