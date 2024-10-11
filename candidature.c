@@ -7,12 +7,48 @@ const char* commandHelpShort[CMD_NB] = {
     "Display status for each application",
     "Display every company with how many application was done",
     "Init json with pre-existing application",
-    "Display this message"
+    "Display this message, helpCd helpCd for more specification"
+};
+
+const char* commandHelp[CMD_NB] = {
+    "newCd -[OPTIONS] COMPANY_NAME\r\n"
+    "\tCreate a new application for COMPANY_NAME with \"Applied to offer\" as a stating reason\r\n"
+    "Options :\r\n"
+    "\t-s  Change starting reason to \"Spontanious candidature\"\r\n"
+    "\t-r  Change starting reason to \"Received proposition\"\r\n",
+    ////////////////////////////////////
+    "statusCd -OPTIONS COMPANY_NAME APPLICATION_NUMBER\r\n"
+    "\tUpdate status of application number APPLICATION_NUMBER for COMPANY_NAME\r\n"
+    "\tCannot currently be used without options\r\n"
+    "Options :\r\n"
+    "\t-n  Change ending reason to \"Offer Declined\"\r\n"
+    "\t-y  Change ending reason to \"Offer Accepted\"\r\n"
+    "\t-r  Change ending reason to \"Rejected\"\r\n"
+    "\t-g  Change last status to \"Ghosted\"\r\n"
+    "\t-h  Change last status to \"HR interview\"\r\n"
+    "\t-t  Change last status to \"Technical interview\"\r\n"
+    "\t-o  Change last status to \"Offer received\"\r\n"
+    "\t-d  Display status of the Application\r\n",
+    ////////////////////////////////////
+    "lsCd -[OPTIONS] [COMPANY_NAME]\r\n"
+    "\tDisplay a list of every company an application was started on.\r\n"
+    "\tIf a [COMPANY_NAME] is specified display each application for said company.\r\n"
+    "Options :\r\n"
+    "\t-l  Also display application status for each application.\r\n",
+    ////////////////////////////////////
+    "updateCds -[OPTIONS] \r\n"
+    "\tInit Json in every company folder\r\n"
+    "Options :\r\n"
+    "\t-d  Also check if the json is sync with the pre-existing application.\r\n",
+    ////////////////////////////////////
+    "helpCd [COMMAND]\r\n"
+    "\tDisplay each command and their uses.\r\n"
+    "\tIf a [COMMAND] is entered display a longer explanation for it.\r\n"
 };
 
 const char* commandStr[CMD_NB] = {
     "newCd",
-    "status",
+    "statusCd",
     "lsCd",
     "updateCds",
     "helpCd"
@@ -50,10 +86,10 @@ static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
         lenCheck = strlen(strcpy(charCheck,"nyrghtod"));
         break;
         case lsCd_sel:
-        lenCheck = strlen(strcpy(charCheck,"sr"));
+        lenCheck = strlen(strcpy(charCheck,"l"));
         break;
         case updateCds_sel:
-        lenCheck = strlen(strcpy(charCheck,""));
+        lenCheck = strlen(strcpy(charCheck,"d"));
         break;
         default:
         break;
@@ -163,7 +199,10 @@ static void checkSubfolder(char *folder){
     unsigned char nbCd = 0, isJsonHere = 0; 
     if(d == NULL){
         char *errorStr;
-        int len = sprintf(errorStr,"Error while opening %s folder ");
+        errorStr = malloc(strlen("Error while opening x folder ") + strlen(folder));
+        sprintf(errorStr,"Error while opening %s folder ",folder);
+        perror(errorStr);
+        free(errorStr);
         exit(EXIT_FAILURE);
     }
     while ((dir = readdir(d)) != NULL) {
@@ -403,7 +442,10 @@ void updateCds(char *argv[],int argc){
     d = opendir(".");
     if(d == NULL){
         char *errorStr;
-        int len = sprintf(errorStr,"Error while opening %s folder ");
+        errorStr = malloc(strlen("Error while current folder ")+1);
+        sprintf(errorStr,"Error while opening current folder ");
+        perror(errorStr);
+        free(errorStr);
         exit(EXIT_FAILURE);
     }
     if (d) {
@@ -429,11 +471,26 @@ void helpCd(char *argv[],int argc){
     char *output;
     int len;
     output = malloc(277);
-    for(int i = 0; i < CMD_NB; i++){
+    if(argc < 2){
+        for(int i = 0; i < CMD_NB; i++){
 
-        len = sprintf(output,"%s : %s\r\n",commandStr[i],commandHelpShort[i]);
-        write(STDOUT_FILENO,output,len);
+            len = sprintf(output,"%s : %s\r\n",commandStr[i],commandHelpShort[i]);
+            write(STDOUT_FILENO,output,len);
+        }
+    }else if(argc == 2){
+        int i = 0;
+        for(i = 0; i < CMD_NB; i++){
+            if(strcmp(commandStr[i],argv[argc-1]) == 0){
+                break;
+            }
+        }
+        write(STDOUT_FILENO,commandHelp[i],strlen(commandHelp[i]));
+    }else{
+        free(output);
+        perror("Too much argument");
+        write(STDOUT_FILENO,commandHelp[4],strlen(commandHelp[4]));
+        exit(EXIT_FAILURE);
     }
+    free(output);
     exit(EXIT_SUCCESS);
-    argv[argc-1] = argv[argc-1];
 }
