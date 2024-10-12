@@ -18,17 +18,16 @@ const char* commandHelp[CMD_NB] = {
     "\t-r  Change starting reason to \"Received proposition\"\r\n",
     ////////////////////////////////////
     "statusCd -OPTIONS COMPANY_NAME APPLICATION_NUMBER\r\n"
-    "\tUpdate status of application number APPLICATION_NUMBER for COMPANY_NAME\r\n"
-    "\tCannot currently be used without options\r\n"
+    "\tDisplay current status of APPLICATION_NUMBERth at COMPANY_NAME\r\n"
+    "\tIf an option is specified update status of application number APPLICATION_NUMBER at COMPANY_NAME\r\n"
     "Options :\r\n"
     "\t-n  Change ending reason to \"Offer Declined\"\r\n"
     "\t-y  Change ending reason to \"Offer Accepted\"\r\n"
     "\t-r  Change ending reason to \"Rejected\"\r\n"
-    "\t-g  Change last status to \"Ghosted\"\r\n"
+    "\t-g  Change ending reason to \"Ghosted\"\r\n"
     "\t-h  Change last status to \"HR interview\"\r\n"
     "\t-t  Change last status to \"Technical interview\"\r\n"
-    "\t-o  Change last status to \"Offer received\"\r\n"
-    "\t-d  Display status of the Application\r\n",
+    "\t-o  Change last status to \"Offer received\"\r\n",
     ////////////////////////////////////
     "lsCd -[OPTIONS] [COMPANY_NAME]\r\n"
     "\tDisplay a list of every company an application was started on.\r\n"
@@ -237,16 +236,33 @@ static void displayCd(char* company, int index){
     }
     json_t *jd, *app_arr, *app, *steps, *string;
     jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
-    if(!jd) {
+    if(!jd || !json_is_object(jd)) {
         free(buffer);
         close(fd);
         perror("Error loading JSON file ");
         exit(EXIT_FAILURE);
     }
     app_arr = json_object_get(jd,"applications");
+    if(!json_is_array(app_arr)) {
+        free(buffer);
+        close(fd);
+        perror("Error loading application array ");
+        exit(EXIT_FAILURE);
+    }
     app = json_array_get(app_arr,index);
+    if(!json_is_object(app)) {
+        free(buffer);
+        close(fd);
+        perror("Error loading application JSON ");
+        exit(EXIT_FAILURE);
+    }
     steps = json_object_get(app,"Step");
-
+    if(!json_is_array(steps)) {
+        free(buffer);
+        close(fd);
+        perror("Error loading steps array");
+        exit(EXIT_FAILURE);
+    }
     buffer = realloc(buffer,strlen(company)+28); // The XXth application for company\r\n\0
     char order[2];
     switch(index%10+1){
@@ -300,16 +316,34 @@ static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEndin
     }
     json_t *jd, *app_arr, *app, *steps;
     jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
-    if(!jd) {
+    if(!jd || !json_is_object(jd)) {
         free(buffer);
         close(fd);
         perror("Error loading JSON file ");
         exit(EXIT_FAILURE);
     }
     app_arr = json_object_get(jd,"applications");
+    if(!json_is_array(app_arr)) {
+        free(buffer);
+        close(fd);
+        perror("Error loading application array ");
+        exit(EXIT_FAILURE);
+    }
     app = json_array_get(app_arr,index);
+    if(!json_is_object(app)) {
+        free(buffer);
+        close(fd);
+        perror("Error loading application JSON ");
+        exit(EXIT_FAILURE);
+    }
     if(isCdEnding == 0){
         steps = json_object_get(app,"Step");
+        if(!json_is_array(steps)) {
+            free(buffer);
+            close(fd);
+            perror("Error loading steps array");
+            exit(EXIT_FAILURE);
+        }
         json_array_append(steps,json_string(addon));
         json_object_set(app,"Step",steps);
     }else{
@@ -393,6 +427,7 @@ void statusCd(char *argv[],int argc){
     uint8_t options = testForOptions(argv[1],statusCd_sel);
 
     if(argc < 3 || (options != NO_OPTIONS && argc < 4)){
+        perror("Not enough parameter ");
         exit(EXIT_FAILURE);
     }
 
