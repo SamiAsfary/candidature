@@ -1,5 +1,5 @@
 #include "main.h"
-#include "candidature.h"
+#include "application.h"
 
 int cinstr(char * str, char separator){
 	int loop = 0, total = 0;	
@@ -89,7 +89,7 @@ int main(){
 				}
 				
 			}
-			candidatureCmd(argv,argc);
+			applicationCmd(argv,argc);
 			execvp(argv[0], argv);
 			exit(EXIT_FAILURE);
 		}
@@ -134,7 +134,7 @@ int main(){
 
 
 
-//#include "candidature.h"
+//#include "application.h"
 /*#include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>

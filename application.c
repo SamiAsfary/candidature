@@ -1,4 +1,4 @@
-#include "candidature.h"
+#include "application.h"
 #include <jansson.h>
 
 
@@ -7,17 +7,17 @@ const char* commandHelpShort[CMD_NB] = {
     "Display status for each application",
     "Display every company with how many application was done",
     "Init json with pre-existing application",
-    "Display this message, helpCd helpCd for more specification"
+    "Display this message, helpApp helpApp for more specification"
 };
 
 const char* commandHelp[CMD_NB] = {
-    "newCd -[OPTIONS] COMPANY_NAME\r\n"
+    "newApp -[OPTIONS] COMPANY_NAME\r\n"
     "\tCreate a new application for COMPANY_NAME with \"Applied to offer\" as a stating reason\r\n"
     "Options :\r\n"
-    "\t-s  Change starting reason to \"Spontanious candidature\"\r\n"
+    "\t-s  Change starting reason to \"Spontanious application\"\r\n"
     "\t-r  Change starting reason to \"Received proposition\"\r\n",
     ////////////////////////////////////
-    "statusCd -OPTIONS COMPANY_NAME APPLICATION_NUMBER\r\n"
+    "statusApp -OPTIONS COMPANY_NAME APPLICATION_NUMBER\r\n"
     "\tDisplay current status of APPLICATION_NUMBERth at COMPANY_NAME\r\n"
     "\tIf an option is specified update status of application number APPLICATION_NUMBER at COMPANY_NAME\r\n"
     "Options :\r\n"
@@ -29,45 +29,65 @@ const char* commandHelp[CMD_NB] = {
     "\t-t  Change last status to \"Technical interview\"\r\n"
     "\t-o  Change last status to \"Offer received\"\r\n",
     ////////////////////////////////////
-    "lsCd -[OPTIONS] [COMPANY_NAME]\r\n"
+    "lsApp -[OPTIONS] [COMPANY_NAME]\r\n"
     "\tDisplay a list of every company an application was started on.\r\n"
     "\tIf a [COMPANY_NAME] is specified display each application for said company.\r\n"
     "Options :\r\n"
     "\t-l  Also display application status for each application.\r\n",
     ////////////////////////////////////
-    "updateCds -[OPTIONS] \r\n"
+    "updateApps -[OPTIONS] \r\n"
     "\tInit Json in every company folder\r\n"
     "Options :\r\n"
     "\t-d  Also check if the json is sync with the pre-existing application.\r\n",
     ////////////////////////////////////
-    "helpCd [COMMAND]\r\n"
+    "helpApp [COMMAND]\r\n"
     "\tDisplay each command and their uses.\r\n"
     "\tIf a [COMMAND] is entered display a longer explanation for it.\r\n"
 };
 
 const char* commandStr[CMD_NB] = {
-    "newCd",
-    "statusCd",
-    "lsCd",
-    "updateCds",
-    "helpCd"
+    "newApp",
+    "statusApp",
+    "lsApp",
+    "updateApps",
+    "helpApp"
 };
 
 const functionCmd_t commandFunc[CMD_NB] = {
-    &newCd,
-    &statusCd,
-    &lsCd,
-    &updateCds,
-    &helpCd
+    &newApp,
+    &statusApp,
+    &lsApp,
+    &updateApps,
+    &helpApp
 };
 
 typedef enum{
-    newCd_sel,
-    statusCd_sel,
-    lsCd_sel,
-    updateCds_sel,
-    helpCd_sel
+    newApp_sel = 0,
+    statusApp_sel,
+    lsApp_sel,
+    updateApps_sel,
+    helpApp_sel
 }cmd_sel_t;
+
+static void strrmch_old(char * str, char c){
+    for(int i = 0; str[i] != '\0'; i++){
+        if(str[i] == c){
+            for(int j = i; str[j-1] != '\0'; j++){
+                str[j] = str[j+1];
+            }
+        }
+    }
+}
+
+static void strrmch(char* str, char c){
+    char *pr = str, *pw = str;
+    while (*pr) {
+        *pw = *pr++;
+        pw += (*pw != c);
+    }
+    *pw = '\0';
+}
+
 
 static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
     uint8_t selectedOptions = NO_OPTIONS;
@@ -78,16 +98,16 @@ static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
     char charCheck[9] = "\0\0\0\0\0\0\0\0\0";
     int lenCheck = 0;
     switch(currentCmd){
-        case newCd_sel:
+        case newApp_sel:
         lenCheck = strlen(strcpy(charCheck,"sr"));
         break;
-        case statusCd_sel:
+        case statusApp_sel:
         lenCheck = strlen(strcpy(charCheck,"nyrghtod"));
         break;
-        case lsCd_sel:
+        case lsApp_sel:
         lenCheck = strlen(strcpy(charCheck,"l"));
         break;
-        case updateCds_sel:
+        case updateApps_sel:
         lenCheck = strlen(strcpy(charCheck,"d"));
         break;
         default:
@@ -109,17 +129,17 @@ static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
     return selectedOptions;
 }
 
-static void initJSON(char *entreprise, char *start){
+static void initJSON(char *company, char *start){
     char* buffer;
-    buffer = malloc(strlen(entreprise)+8); // entreprise + /Cd.json
+    buffer = malloc(strlen(company)+8); // company + /App.json
     json_t* application0 = json_pack("{ s: i, s: s, s: [], s: s}",
         "Index", 1,
         "Start", start,
         "Step",
         "End", "Ongoing"
     );
-    json_t* jd = json_pack("{s: s, s: i, s: [O]}","entreprise",entreprise,"Cd Total",1 , "applications",application0);
-    sprintf(buffer, "%s/Cd.json", entreprise);
+    json_t* jd = json_pack("{s: s, s: i, s: [O]}","company",company,"App Total",1 , "applications",application0);
+    sprintf(buffer, "%s/App.json", company);
     int fd = open(buffer, O_RDWR | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
@@ -132,27 +152,37 @@ static void initJSON(char *entreprise, char *start){
     free(buffer);
 }
 /*
-static void checkSubfolderJson(char *folder,int nbCd){
+static void checkSubfolderJson(char *folder,int nbApp){
     char * buffer;
     int fd;
     json_t * jd;
     json_error_t error;
     json_t *arr1 = json_array(); 
-    buffer = malloc(strlen(folder)+strlen("/Cd.json"));
-    sprintf(buffer, "%s/Cd.json",folder);
+    buffer = malloc(strlen(folder)+strlen("/App.json"));
+    sprintf(buffer, "%s/App.json",folder);
 
     fd = open(buffer, O_RDONLY);
     jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
-    json_unpack(jd,"{s: s, s: i, s: o","entreprise",folder,"Cd Total", nbCd, "applications", &arr1);
+    json_unpack(jd,"{s: s, s: i, s: o","company",folder,"App Total", nbApp, "applications", &arr1);
     close(fd);
     free(buffer);
 }
 */
-static void addingJSON(char *entreprise, char *start,int index){
+
+static cmd_sel_t strToSel(char* cmdStr){
+    for(cmd_sel_t cmdSel = newApp_sel; cmdSel < CMD_NB; cmdSel++){
+        if(strcmp(commandStr[cmdSel],cmdStr) == 0){
+            return cmdSel;
+        }
+    }
+    return newApp_sel;
+}
+
+static void addingJSON(char *company, char *start,int index){
     char* buffer;
     json_error_t error;
-    buffer = malloc(strlen(entreprise)+9); // entreprise + /Cd.json
-    sprintf(buffer,"%s/Cd.json",entreprise);
+    buffer = malloc(strlen(company)+9); // company + /App.json
+    sprintf(buffer,"%s/App.json",company);
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
@@ -176,9 +206,9 @@ static void addingJSON(char *entreprise, char *start,int index){
     }
     json_t *arr1 = json_array(); 
     int test;
-    json_unpack(jd,"{s: s, s: i, s: o","entreprise",entreprise,"Cd Total", &test, "applications", &arr1);
+    json_unpack(jd,"{s: s, s: i, s: o","company",company,"App Total", &test, "applications", &arr1);
     if(index != test+1){}
-    json_object_set(jd,"Cd Total", json_integer(test + 1));
+    json_object_set(jd,"App Total", json_integer(test + 1));
     json_t* application = json_pack("{ s: i, s: s, s: [], s: s}",
         "Index", index,
         "Start", start,
@@ -195,7 +225,7 @@ static void checkSubfolder(char *folder){
     DIR *d;
     struct dirent *dir;
     d = opendir(folder);
-    unsigned char nbCd = 0, isJsonHere = 0; 
+    unsigned char nbApp = 0, isJsonHere = 0; 
     if(d == NULL){
         char *errorStr;
         errorStr = malloc(strlen("Error while opening x folder ") + strlen(folder));
@@ -205,29 +235,29 @@ static void checkSubfolder(char *folder){
         exit(EXIT_FAILURE);
     }
     while ((dir = readdir(d)) != NULL) {
-        if(dir->d_type == 4 && !strncmp("Cd", dir->d_name,2)){
-            nbCd++;
-        }else if(dir->d_type == 8 && !strncmp("Cd.json", dir->d_name,7)){
+        if(dir->d_type == 4 && !strncmp("App", dir->d_name,2)){
+            nbApp++;
+        }else if(dir->d_type == 8 && !strncmp("App.json", dir->d_name,7)){
             isJsonHere = 1;
         }
     }
     closedir(d);
-    printf("In %s there is %u Cd\n", folder, nbCd);
+    printf("In %s there is %u App\n", folder, nbApp);
     if(isJsonHere){
         
     }else{
         initJSON(folder, "Applied to offer");
-        for(int cd = 2; cd <= nbCd; cd++){
-            addingJSON(folder,"Applied to offer",cd);
+        for(int App = 2; App <= nbApp; App++){
+            addingJSON(folder,"Applied to offer",App);
         }
     }
 }
 
-static void displayCd(char* company, int index){
+static void displayApp(char* company, int index){
     char* buffer;
     json_error_t error;
-    buffer = malloc(strlen(company)+9); // entreprise + /Cd.json\0
-    sprintf(buffer,"%s/Cd.json",company);
+    buffer = malloc(strlen(company)+9); // company + /App.json\0
+    sprintf(buffer,"%s/App.json",company);
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
@@ -303,11 +333,11 @@ static void displayCd(char* company, int index){
     write(STDOUT_FILENO,"\n",strlen("\n"));
 }
 
-static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEnding){
+static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnding){
     char* buffer;
     json_error_t error;
-    buffer = malloc(strlen(company)+9); // entreprise + /Cd.json
-    sprintf(buffer,"%s/Cd.json",company);
+    buffer = malloc(strlen(company)+9); // company + /App.json
+    sprintf(buffer,"%s/App.json",company);
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
@@ -336,7 +366,7 @@ static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEndin
         perror("Error loading application JSON ");
         exit(EXIT_FAILURE);
     }
-    if(isCdEnding == 0){
+    if(isAppEnding == 0){
         steps = json_object_get(app,"Step");
         if(!json_is_array(steps)) {
             free(buffer);
@@ -363,7 +393,43 @@ static void addStatusCd(char* company, int index, char* addon, uint8_t isCdEndin
     free(buffer);
 }
 
-void candidatureCmd(char *argv[],int argc){
+void applicationCmd(char *argv[],int argc){
+    
+    if(argc > 1){
+        int startingIndex = 1, isFirstApostrophe = 0;
+        if(testForOptions(argv[1],strToSel(argv[0])) != NO_OPTIONS){
+            startingIndex = 2;
+        }
+        write(STDOUT_FILENO,"len", 4);
+        int i = startingIndex;
+        while(i < argc){
+            if(isFirstApostrophe == 0 && argv[i][0] == '\"'){
+                startingIndex = i;
+                isFirstApostrophe = 1;
+                write(STDOUT_FILENO,"found", 6);
+            }else if(argv[i][strlen(argv[i])-1] == '\"'){
+                for(int j = startingIndex+1; j <= i; j++){
+                    strcat(argv[startingIndex]," ");
+                    strcat(argv[startingIndex],argv[j]);
+                }
+                write(STDOUT_FILENO,argv[startingIndex],strlen(argv[startingIndex]));
+                for(int j = 1; i + j < argc; j++){
+                    argv[startingIndex + j] = argv[i + j];
+                }
+                write(STDOUT_FILENO,"found2", 7);
+                argc = argc - (i - startingIndex)-1;
+                argc = startingIndex + (argc - i) + 2;
+                strrmch(argv[startingIndex],'\"');
+                break;
+            }
+            i++;
+            write(STDOUT_FILENO,"loop", 5);
+        }
+
+    }
+    write(STDOUT_FILENO,"disp\n", 6);
+    write(STDOUT_FILENO,argv[argc-1],strlen(argv[argc-1]));
+    write(STDOUT_FILENO,"disp\n", 6);
     for(int loop = 0; loop < CMD_NB; loop++){
         if(!strncmp(argv[0],commandStr[loop],strlen(commandStr[loop]))){
             commandFunc[loop](argv,argc);
@@ -371,7 +437,7 @@ void candidatureCmd(char *argv[],int argc){
     }
 }
 
-void newCd(char *argv[], int argc){
+void newApp(char *argv[], int argc){
     for(int loop = 0; loop < argc; loop++){
         write(STDOUT_FILENO, argv[loop],strlen(argv[loop]));
         write(STDOUT_FILENO, "\n",1);
@@ -384,19 +450,19 @@ void newCd(char *argv[], int argc){
     char * company = malloc(strlen(argv[argc-1]));
     sprintf(company,"%s",argv[argc-1]);
     
-    char * path = malloc(strlen(company)+5); // argv[1] + \Cd1
+    char * path = malloc(strlen(company)+5); // argv[1] + \App1
     
     struct stat st = {0};
     char candStart[24] = "Applied to offer";
-    uint8_t selectedOptions = testForOptions(argv[1],newCd_sel);
-    if((selectedOptions & NEWCD_SPONTANIOUS) == NEWCD_SPONTANIOUS){
-        sprintf(candStart,"Spontanious candidature");
-    }else if((selectedOptions & NEWCD_RECEIVED) == NEWCD_RECEIVED){
+    uint8_t selectedOptions = testForOptions(argv[1],newApp_sel);
+    if((selectedOptions & NEWAPP_SPONTANIOUS) == NEWAPP_SPONTANIOUS){
+        sprintf(candStart,"Spontanious application");
+    }else if((selectedOptions & NEWAPP_RECEIVED) == NEWAPP_RECEIVED){
         sprintf(candStart,"Received proposition");
     }
 
     if(stat(company, &st) == -1) {
-        sprintf(path,"%s/Cd1",company);
+        sprintf(path,"%s/App1",company);
         if (mkdir(company, JSON_PERM) != 0 || mkdir(path, JSON_PERM) != 0){
             free(path);
             exit(EXIT_FAILURE);
@@ -409,7 +475,7 @@ void newCd(char *argv[], int argc){
     int i = 0;
     do{
         i++;
-        sprintf(path,"%s/Cd%d",company,i);
+        sprintf(path,"%s/App%d",company,i);
     }while( stat(path, &st) == 0 && i < 9);
     printf("\npath : %s\n",path);
     addingJSON(company,candStart,i);
@@ -422,9 +488,9 @@ void newCd(char *argv[], int argc){
     exit(EXIT_FAILURE);
 }
 
-void statusCd(char *argv[],int argc){
+void statusApp(char *argv[],int argc){
     
-    uint8_t options = testForOptions(argv[1],statusCd_sel);
+    uint8_t options = testForOptions(argv[1],statusApp_sel);
 
     if(argc < 3 || (options != NO_OPTIONS && argc < 4)){
         perror("Not enough parameter ");
@@ -432,46 +498,46 @@ void statusCd(char *argv[],int argc){
     }
 
     if(options == NO_OPTIONS){
-        displayCd(argv[argc-2],atoi(argv[argc-1])-1);
+        displayApp(argv[argc-2],atoi(argv[argc-1])-1);
         exit(EXIT_SUCCESS);
         
     }
 
     char* addon;
-    uint8_t isCdEnding = 0;
-    if((options&STATUSCD_DECLINED) == STATUSCD_DECLINED){
+    uint8_t isAppEnding = 0;
+    if((options&STATUSAPP_DECLINED) == STATUSAPP_DECLINED){
         addon = malloc(strlen("Offer Declined")+1);
         strcpy(addon,"Offer Declined");
-        isCdEnding = 1;
-    }else if((options&STATUSCD_ACCEPTED) == STATUSCD_ACCEPTED){
+        isAppEnding = 1;
+    }else if((options&STATUSAPP_ACCEPTED) == STATUSAPP_ACCEPTED){
         addon = malloc(strlen("Offer Accepted")+1);
         strcpy(addon,"Offer Accepted");
-        isCdEnding = 1;
-    }else if((options&STATUSCD_REJECTED) == STATUSCD_REJECTED){
+        isAppEnding = 1;
+    }else if((options&STATUSAPP_REJECTED) == STATUSAPP_REJECTED){
         addon = malloc(strlen("Rejected")+1);
         strcpy(addon,"Rejected");
-        isCdEnding = 1;
-    }else if((options&STATUSCD_GHOSTED) == STATUSCD_GHOSTED){
+        isAppEnding = 1;
+    }else if((options&STATUSAPP_GHOSTED) == STATUSAPP_GHOSTED){
         addon = malloc(strlen("Ghosted")+1);
         strcpy(addon,"Ghosted");
-        isCdEnding = 1;
-    }else if((options&STATUSCD_HRINTERVIEW) == STATUSCD_HRINTERVIEW){
+        isAppEnding = 1;
+    }else if((options&STATUSAPP_HRINTERVIEW) == STATUSAPP_HRINTERVIEW){
         addon = malloc(strlen("HR interview")+1);
         strcpy(addon,"HR interview");
-    }else if((options&STATUSCD_TECHINTERVIEW) == STATUSCD_TECHINTERVIEW){
+    }else if((options&STATUSAPP_TECHINTERVIEW) == STATUSAPP_TECHINTERVIEW){
         addon = malloc(strlen("Technical interview")+1);
         strcpy(addon,"Technical interview");
-    }else if((options&STATUSCD_OFFER) == STATUSCD_OFFER){
+    }else if((options&STATUSAPP_OFFER) == STATUSAPP_OFFER){
         addon = malloc(strlen("Offer received")+1);
         strcpy(addon,"Offer received");
     }
 
-    addStatusCd(argv[argc-2],atoi(argv[argc-1])-1,addon,isCdEnding);
+    addStatusApp(argv[argc-2],atoi(argv[argc-1])-1,addon,isAppEnding);
     exit(EXIT_SUCCESS);
 
 }
 
-void updateCds(char *argv[],int argc){
+void updateApps(char *argv[],int argc){
     DIR *d;
     struct dirent *dir;
     d = opendir(".");
@@ -497,12 +563,12 @@ void updateCds(char *argv[],int argc){
     
 }
 
-void lsCd(char *argv[],int argc){
+void lsApp(char *argv[],int argc){
     exit(EXIT_SUCCESS);
     argv[argc-1] = argv[argc-1];
 }
 
-void helpCd(char *argv[],int argc){
+void helpApp(char *argv[],int argc){
     char *output;
     int len;
     output = malloc(277);
