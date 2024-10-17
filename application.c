@@ -235,9 +235,9 @@ static void checkSubfolder(char *folder){
         exit(EXIT_FAILURE);
     }
     while ((dir = readdir(d)) != NULL) {
-        if(dir->d_type == 4 && !strncmp("App", dir->d_name,2)){
+        if(dir->d_type == 4 && !strncmp("App", dir->d_name,3)){
             nbApp++;
-        }else if(dir->d_type == 8 && !strncmp("App.json", dir->d_name,7)){
+        }else if(dir->d_type == 8 && !strncmp("App.json", dir->d_name,8)){
             isJsonHere = 1;
         }
     }
@@ -564,8 +564,35 @@ void updateApps(char *argv[],int argc){
 }
 
 void lsApp(char *argv[],int argc){
+    //write(STDOUT_FILENO,"Im in",5);
+    uint8_t selectedOptions = NO_OPTIONS;
+    if(argc > 1){
+        selectedOptions = testForOptions(argv[1],lsApp_sel);
+    }
+    //write(STDOUT_FILENO,"test\n",5);
+    DIR *dp;
+    struct dirent *ep;
+    int count = 0;
+    dp = opendir ("./");
+    if(dp == NULL){
+        perror ("Couldn't open the directory");
+        exit(EXIT_FAILURE);
+    }
+    while ((ep = readdir (dp)) != NULL){
+        //write(STDOUT_FILENO,"help\n",5);
+        if(ep->d_type == 4 && ep->d_name[0] != '.'){
+            write(STDOUT_FILENO,ep->d_name,strlen(ep->d_name));
+            write(STDOUT_FILENO,"\t",2);
+            count++;
+            if(count%5 == 0){
+                write(STDOUT_FILENO,"\n",1);
+            }
+        }
+        
+    }
+    write(STDOUT_FILENO,"\n",1);
+    closedir(dp);
     exit(EXIT_SUCCESS);
-    argv[argc-1] = argv[argc-1];
 }
 
 void helpApp(char *argv[],int argc){
