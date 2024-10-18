@@ -88,6 +88,51 @@ static void strrmch(char* str, char c){
     *pw = '\0';
 }
 
+static void lsAppList1line(char* company){
+    char* buffer, *outputStr;
+    json_error_t error;
+    int nbApp = 0, nbAppOpen = 0;
+    json_t *jd, *app_arr, *app;
+    buffer = malloc(strlen(company)+9); // company + /App.json
+    sprintf(buffer,"%s/App.json",company);
+    int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
+    if(fd == -1){
+        free(buffer);
+        perror("Error opening JSON file ");
+        exit(EXIT_FAILURE);
+    }
+    jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+    if(!jd || !json_is_object(jd)) {
+        free(buffer);
+        close(fd);
+        perror("Error loading JSON file ");
+        exit(EXIT_FAILURE);
+    }
+    nbApp = (int) json_integer_value(json_object_get(jd,"App Total"));
+    app_arr = json_object_get(jd,"applications");
+    if(!json_is_array(app_arr)) {
+        free(buffer);
+        close(fd);
+        perror("Error loading application array ");
+        exit(EXIT_FAILURE);
+    }
+    for(int index = 0; index < nbApp; index++){
+        app = json_array_get(app_arr,index);
+        if(!json_is_object(app)) {
+            free(buffer);
+            close(fd);
+            perror("Error loading application JSON ");
+            exit(EXIT_FAILURE);
+        }
+        if(strcmp("Ongoing",json_string_value(json_object_get(app,"End"))) != 0){
+            nbAppOpen++;
+        }
+    }
+    outputStr = malloc(strlen(company) + 4 + 6); // company + '\t' + total + '\t' + ongoing + \r\n\0
+    sprintf(outputStr,"%s\t\t%d\t%d\r\n",company,nbApp,nbAppOpen);
+    write(STDOUT_FILENO,outputStr,strlen(outputStr));
+}
+
 
 static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
     uint8_t selectedOptions = NO_OPTIONS;
@@ -394,42 +439,33 @@ static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnd
 }
 
 void applicationCmd(char *argv[],int argc){
-    
     if(argc > 1){
         int startingIndex = 1, isFirstApostrophe = 0;
         if(testForOptions(argv[1],strToSel(argv[0])) != NO_OPTIONS){
             startingIndex = 2;
         }
-        write(STDOUT_FILENO,"len", 4);
         int i = startingIndex;
         while(i < argc){
             if(isFirstApostrophe == 0 && argv[i][0] == '\"'){
                 startingIndex = i;
                 isFirstApostrophe = 1;
-                write(STDOUT_FILENO,"found", 6);
             }else if(argv[i][strlen(argv[i])-1] == '\"'){
                 for(int j = startingIndex+1; j <= i; j++){
                     strcat(argv[startingIndex]," ");
                     strcat(argv[startingIndex],argv[j]);
                 }
-                write(STDOUT_FILENO,argv[startingIndex],strlen(argv[startingIndex]));
                 for(int j = 1; i + j < argc; j++){
                     argv[startingIndex + j] = argv[i + j];
                 }
-                write(STDOUT_FILENO,"found2", 7);
                 argc = argc - (i - startingIndex)-1;
-                argc = startingIndex + (argc - i) + 2;
+                argc = startingIndex + (argc - i) + 3;
                 strrmch(argv[startingIndex],'\"');
                 break;
             }
             i++;
-            write(STDOUT_FILENO,"loop", 5);
         }
 
     }
-    write(STDOUT_FILENO,"disp\n", 6);
-    write(STDOUT_FILENO,argv[argc-1],strlen(argv[argc-1]));
-    write(STDOUT_FILENO,"disp\n", 6);
     for(int loop = 0; loop < CMD_NB; loop++){
         if(!strncmp(argv[0],commandStr[loop],strlen(commandStr[loop]))){
             commandFunc[loop](argv,argc);
@@ -578,17 +614,23 @@ void lsApp(char *argv[],int argc){
         perror ("Couldn't open the directory");
         exit(EXIT_FAILURE);
     }
+    if((selectedOptions&LSAPP_LIST) == LSAPP_LIST){
+        write(STDOUT_FILENO,"\n\rcompany\t\ttotal\tongoing\n\r",26);
+    }
     while ((ep = readdir (dp)) != NULL){
         //write(STDOUT_FILENO,"help\n",5);
         if(ep->d_type == 4 && ep->d_name[0] != '.'){
-            write(STDOUT_FILENO,ep->d_name,strlen(ep->d_name));
-            write(STDOUT_FILENO,"\t",2);
-            count++;
-            if(count%5 == 0){
-                write(STDOUT_FILENO,"\n",1);
+            if((selectedOptions&LSAPP_LIST) == LSAPP_LIST){
+                lsAppList1line(ep->d_name);
+            }else{
+                write(STDOUT_FILENO,ep->d_name,strlen(ep->d_name));
+                write(STDOUT_FILENO,"\t",2);
+                count++;
+                if(count%5 == 0){
+                    write(STDOUT_FILENO,"\n",1);
+                }
             }
         }
-        
     }
     write(STDOUT_FILENO,"\n",1);
     closedir(dp);
