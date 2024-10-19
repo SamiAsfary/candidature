@@ -88,6 +88,83 @@ static void strrmch(char* str, char c){
     *pw = '\0';
 }
 
+static cmd_sel_t strToSel(char* cmdStr){
+    for(cmd_sel_t cmdSel = newApp_sel; cmdSel < CMD_NB; cmdSel++){
+        if(strcmp(commandStr[cmdSel],cmdStr) == 0){
+            return cmdSel;
+        }
+    }
+    return newApp_sel;
+}
+
+static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
+    uint8_t selectedOptions = NO_OPTIONS;
+    int lenOptions = strlen(possibleOptions);
+    if(possibleOptions[0] != '-' || lenOptions < 2){
+        return selectedOptions;
+    }
+    char charCheck[9] = "\0\0\0\0\0\0\0\0\0";
+    int lenCheck = 0;
+    switch(currentCmd){
+        case newApp_sel:
+        lenCheck = strlen(strcpy(charCheck,"sr"));
+        break;
+        case statusApp_sel:
+        lenCheck = strlen(strcpy(charCheck,"nyrghtod"));
+        break;
+        case lsApp_sel:
+        lenCheck = strlen(strcpy(charCheck,"l"));
+        break;
+        case updateApps_sel:
+        lenCheck = strlen(strcpy(charCheck,"d"));
+        break;
+        default:
+        break;
+    }
+    int indexOptions = 1,indexCheck = 0;
+    while(indexOptions < lenOptions){
+        indexCheck = 0;
+        while(indexCheck < lenCheck && charCheck[indexCheck] != '\0'){
+            if(charCheck[indexCheck] == possibleOptions[indexOptions]){
+                selectedOptions |= 1 << indexCheck;
+            }
+            indexCheck++;
+        }
+        indexOptions++;
+    }
+    return selectedOptions;
+}
+
+static int testForQuote(char *argv[],int argc){
+    if(argc > 1){
+        int startingIndex = 1, isFirstApostrophe = 0;
+        if(testForOptions(argv[1],strToSel(argv[0])) != NO_OPTIONS){
+            startingIndex = 2;
+        }
+        int i = startingIndex;
+        while(i < argc){
+            if(isFirstApostrophe == 0 && argv[i][0] == '\"'){
+                startingIndex = i;
+                isFirstApostrophe = 1;
+            }else if(argv[i][strlen(argv[i])-1] == '\"'){
+                for(int j = startingIndex+1; j <= i; j++){
+                    strcat(argv[startingIndex]," ");
+                    strcat(argv[startingIndex],argv[j]);
+                }
+                for(int j = 1; i + j < argc; j++){
+                    argv[startingIndex + j] = argv[i + j];
+                }
+                argc = argc - (i - startingIndex);
+                strrmch(argv[startingIndex],'\"');
+                break;
+            }
+            i++;
+        }
+
+    }
+    return argc;
+}
+
 static void lsAppList1line(char* company){
     char* buffer, *outputStr;
     json_error_t error;
@@ -133,47 +210,6 @@ static void lsAppList1line(char* company){
     write(STDOUT_FILENO,outputStr,strlen(outputStr));
 }
 
-
-static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
-    uint8_t selectedOptions = NO_OPTIONS;
-    int lenOptions = strlen(possibleOptions);
-    if(possibleOptions[0] != '-' || lenOptions < 2){
-        return selectedOptions;
-    }
-    char charCheck[9] = "\0\0\0\0\0\0\0\0\0";
-    int lenCheck = 0;
-    switch(currentCmd){
-        case newApp_sel:
-        lenCheck = strlen(strcpy(charCheck,"sr"));
-        break;
-        case statusApp_sel:
-        lenCheck = strlen(strcpy(charCheck,"nyrghtod"));
-        break;
-        case lsApp_sel:
-        lenCheck = strlen(strcpy(charCheck,"l"));
-        break;
-        case updateApps_sel:
-        lenCheck = strlen(strcpy(charCheck,"d"));
-        break;
-        default:
-        break;
-    }
-    int indexOptions = 1,indexCheck = 0;
-    while(indexOptions < lenOptions){
-        indexCheck = 0;
-        while(indexCheck < lenCheck && charCheck[indexCheck] != '\0'){
-            if(charCheck[indexCheck] == possibleOptions[indexOptions]){
-                selectedOptions |= 1 << indexCheck;
-            }
-            indexCheck++;
-        }
-        indexOptions++;
-    }
-    sprintf(charCheck,"%#02X",selectedOptions);
-    write(STDOUT_FILENO,charCheck,strlen(charCheck));
-    return selectedOptions;
-}
-
 static void initJSON(char *company, char *start){
     char* buffer;
     buffer = malloc(strlen(company)+8); // company + /App.json
@@ -214,14 +250,7 @@ static void checkSubfolderJson(char *folder,int nbApp){
 }
 */
 
-static cmd_sel_t strToSel(char* cmdStr){
-    for(cmd_sel_t cmdSel = newApp_sel; cmdSel < CMD_NB; cmdSel++){
-        if(strcmp(commandStr[cmdSel],cmdStr) == 0){
-            return cmdSel;
-        }
-    }
-    return newApp_sel;
-}
+
 
 static void addingJSON(char *company, char *start,int index){
     char* buffer;
@@ -439,35 +468,9 @@ static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnd
 }
 
 void applicationCmd(char *argv[],int argc){
-    if(argc > 1){
-        int startingIndex = 1, isFirstApostrophe = 0;
-        if(testForOptions(argv[1],strToSel(argv[0])) != NO_OPTIONS){
-            startingIndex = 2;
-        }
-        int i = startingIndex;
-        while(i < argc){
-            if(isFirstApostrophe == 0 && argv[i][0] == '\"'){
-                startingIndex = i;
-                isFirstApostrophe = 1;
-            }else if(argv[i][strlen(argv[i])-1] == '\"'){
-                for(int j = startingIndex+1; j <= i; j++){
-                    strcat(argv[startingIndex]," ");
-                    strcat(argv[startingIndex],argv[j]);
-                }
-                for(int j = 1; i + j < argc; j++){
-                    argv[startingIndex + j] = argv[i + j];
-                }
-                argc = argc - (i - startingIndex)-1;
-                argc = startingIndex + (argc - i) + 3;
-                strrmch(argv[startingIndex],'\"');
-                break;
-            }
-            i++;
-        }
-
-    }
     for(int loop = 0; loop < CMD_NB; loop++){
         if(!strncmp(argv[0],commandStr[loop],strlen(commandStr[loop]))){
+            argc = testForQuote(argv,argc);
             commandFunc[loop](argv,argc);
         }
     }
