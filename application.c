@@ -1,7 +1,21 @@
+/**
+ * @file application.c
+ * @author SamiAsfary (https://github.com/SamiAsfary)
+ * @brief This file provide the 
+ * @version 1.0
+ * @date 2024-10-21
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "application.h"
 #include <jansson.h>
 
-
+/**
+ * @brief   This array stores a short description of each command.
+ * 
+ */
 const char* commandHelpShort[CMD_NB] = {
     "Create entry for new application",
     "Display status for each application",
@@ -10,6 +24,11 @@ const char* commandHelpShort[CMD_NB] = {
     "Display this message, helpApp helpApp for more specification"
 };
 
+/**
+ * @brief   This array stores a longer description of each function with 
+ *          a description of each options.
+ * 
+ */
 const char* commandHelp[CMD_NB] = {
     "newApp -[OPTIONS] COMPANY_NAME\r\n"
     "\tCreate a new application for COMPANY_NAME with \"Applied to offer\" as a stating reason\r\n"
@@ -50,7 +69,7 @@ const char* commandStr[CMD_NB] = {
     "statusApp",
     "lsApp",
     "updateApps",
-    "helpApp"
+    "helpApp"       
 };
 
 const functionCmd_t commandFunc[CMD_NB] = {
@@ -79,6 +98,15 @@ static void strrmch_old(char * str, char c){
     }
 }
 
+
+/**
+ * @brief remove each instance of a char from a string
+ * 
+ * @param str pointer to string 
+ * @param c character to remove
+ * 
+ * @retval str 
+ */
 static void strrmch(char* str, char c){
     char *pr = str, *pw = str;
     while (*pr) {
@@ -88,6 +116,12 @@ static void strrmch(char* str, char c){
     *pw = '\0';
 }
 
+/**
+ * @brief convert command string to enum command selection
+ * 
+ * @param cmdStr string to convert
+ * @return cmd_sel_t enum corresponding to cmdStr
+ */
 static cmd_sel_t strToSel(char* cmdStr){
     for(cmd_sel_t cmdSel = newApp_sel; cmdSel < CMD_NB; cmdSel++){
         if(strcmp(commandStr[cmdSel],cmdStr) == 0){
@@ -97,6 +131,13 @@ static cmd_sel_t strToSel(char* cmdStr){
     return newApp_sel;
 }
 
+/**
+ * @brief Check if the selected command line include options
+ * 
+ * @param possibleOptions pointer to the string possibly containing options
+ * @param currentCmd enum selecting working command
+ * @return uint8_t return options as defined in application.h
+ */
 static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
     uint8_t selectedOptions = NO_OPTIONS;
     int lenOptions = strlen(possibleOptions);
@@ -135,6 +176,15 @@ static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
     return selectedOptions;
 }
 
+/**
+ * @brief   search if there is quote in command line, if so concatenate
+ *          every arguments in quote inside one argument.
+ * @warning change argv, if argv isn't used with another function in 
+ *          this file (application.c) error may occur.
+ * @param argv command line received
+ * @param argc number of argument
+ * @return int return new number of argument
+ */
 static int testForQuote(char *argv[],int argc){
     if(argc > 1){
         int startingIndex = 1, isFirstApostrophe = 0;
@@ -165,6 +215,11 @@ static int testForQuote(char *argv[],int argc){
     return argc;
 }
 
+/**
+ * @brief Display the shallow data of one company.
+ * 
+ * @param company string of selected company
+ */
 static void lsAppList1line(char* company){
     char* buffer, *outputStr;
     json_error_t error;
@@ -210,6 +265,12 @@ static void lsAppList1line(char* company){
     write(STDOUT_FILENO,outputStr,strlen(outputStr));
 }
 
+/**
+ * @brief Initialise JSON of a company with a set Start for the first application.
+ * 
+ * @param company string of the company name
+ * @param start string of the start
+ */
 static void initJSON(char *company, char *start){
     char* buffer;
     buffer = malloc(strlen(company)+8); // company + /App.json
@@ -232,6 +293,7 @@ static void initJSON(char *company, char *start){
     close(fd);
     free(buffer);
 }
+
 /*
 static void checkSubfolderJson(char *folder,int nbApp){
     char * buffer;
@@ -250,8 +312,13 @@ static void checkSubfolderJson(char *folder,int nbApp){
 }
 */
 
-
-
+/**
+ * @brief Add a new application with set start and index to JSON of the company
+ * @todo Add error if index != (application number + 1)
+ * @param company string of the company name
+ * @param start string of the start
+ * @param index index of the application
+ */
 static void addingJSON(char *company, char *start,int index){
     char* buffer;
     json_error_t error;
@@ -295,6 +362,13 @@ static void addingJSON(char *company, char *start,int index){
     free(buffer);
 }
 
+/**
+ * @brief   This function checks if the folder contains the JSON;
+ *          And if not init the JSON with the correct number of application;
+ *          The default start is "Applied to offer"
+ * @todo Add check if number of application in JSON is the same as number of folder
+ * @param folder name of the folder to check in
+ */
 static void checkSubfolder(char *folder){
     DIR *d;
     struct dirent *dir;
@@ -327,6 +401,12 @@ static void checkSubfolder(char *folder){
     }
 }
 
+/**
+ * @brief Display in terminal the complete status of an application.
+ * 
+ * @param company company applied to
+ * @param index index of the application
+ */
 static void displayApp(char* company, int index){
     char* buffer;
     json_error_t error;
@@ -407,6 +487,14 @@ static void displayApp(char* company, int index){
     write(STDOUT_FILENO,"\n",strlen("\n"));
 }
 
+/**
+ * @brief Add a new status to an application.
+ * 
+ * @param company company applied to
+ * @param index index of the application
+ * @param addon string of the status to add to the application
+ * @param isAppEnding 1 if it change ending status, 0 otherwise
+ */
 static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnding){
     char* buffer;
     json_error_t error;

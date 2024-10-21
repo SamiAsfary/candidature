@@ -1,3 +1,14 @@
+/**
+ * @file application.h
+ * @author SamiAsfary (https://github.com/SamiAsfary)
+ * @brief 
+ * @version 1.0
+ * @date 2024-10-21
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
