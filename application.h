@@ -41,6 +41,9 @@
 #define STATUSAPP_OFFER      0b1 << 6
 #define STATUSAPP_DISPLAY    0b1 << 7
 
+#define UPDATEAPPS_DIRECTORY 0b1 << 0
+#define UPDATEAPPS_RETRO     0b1 << 1
+
 #define LSAPP_LIST   0b1 << 0
 
 

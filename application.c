@@ -57,7 +57,8 @@ const char* commandHelp[CMD_NB] = {
     "updateApps -[OPTIONS] \r\n"
     "\tInit Json in every company folder\r\n"
     "Options :\r\n"
-    "\t-d  Also check if the json is sync with the pre-existing application.\r\n",
+    "\t-d  Also check if the json is sync with the pre-existing application.\r\n"
+    "\t-r  Allow retro compatibility by changing Cd and candidature by App et application.\r\n",
     ////////////////////////////////////
     "helpApp [COMMAND]\r\n"
     "\tDisplay each command and their uses.\r\n"
@@ -157,7 +158,7 @@ static uint8_t testForOptions(char *possibleOptions, cmd_sel_t currentCmd){
         lenCheck = strlen(strcpy(charCheck,"l"));
         break;
         case updateApps_sel:
-        lenCheck = strlen(strcpy(charCheck,"d"));
+        lenCheck = strlen(strcpy(charCheck,"dr"));
         break;
         default:
         break;
@@ -273,7 +274,7 @@ static void lsAppList1line(char* company){
  */
 static void initJSON(char *company, char *start){
     char* buffer;
-    buffer = malloc(strlen(company)+8); // company + /App.json
+    buffer = malloc(strlen(company)+9); // company + /App.json\0
     json_t* application0 = json_pack("{ s: i, s: s, s: [], s: s}",
         "Index", 1,
         "Start", start,
@@ -398,6 +399,85 @@ static void checkSubfolder(char *folder){
         for(int App = 2; App <= nbApp; App++){
             addingJSON(folder,"Applied to offer",App);
         }
+    }
+}
+
+/**
+ * @brief This function change Cd.json to App.json if the former exists
+ * 
+ * @param folder name of the folder to check in
+ */
+static void checkFolderJSON(char *folder){
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(folder);
+    unsigned char nbApp = 0, isCdJsonHere = 0; 
+    if(d == NULL){
+        char *errorStr;
+        errorStr = malloc(strlen("Error while opening x folder ") + strlen(folder));
+        sprintf(errorStr,"Error while opening %s folder ",folder);
+        perror(errorStr);
+        free(errorStr);
+        exit(EXIT_FAILURE);
+    }
+    while ((dir = readdir(d)) != NULL) {
+        if(dir->d_type == 4 && !strncmp("App", dir->d_name,3)){
+            nbApp++;
+        }else if(dir->d_type == 8 && strncmp("Cd.json", dir->d_name,7) == 0){
+            isCdJsonHere = 1;
+            write(STDOUT_FILENO,dir->d_name,strlen(dir->d_name));
+        }
+    }
+    closedir(d);
+    if(isCdJsonHere == 1){
+        char *buffer = malloc(strlen(folder) + 9);// company + "Cd.json\0"
+        json_t *app_arr, *jd, *newjd;
+        json_error_t error;
+        int test;
+        sprintf(buffer,"%s/Cd.json",folder);
+        int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
+        if(fd == -1){
+            char *errorStr;
+            errorStr = malloc(strlen("Error while opening x file ") + strlen(buffer));
+            sprintf(errorStr,"Error while opening %s file ",buffer);
+            free(buffer);
+            perror(errorStr);
+            exit(EXIT_FAILURE);
+        }
+        jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
+        if(!jd || !json_is_object(jd)) {
+            free(buffer);
+            close(fd);
+            perror("Error loading JSON file ");
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
+        app_arr = json_object_get(jd,"applications");
+        if(!json_is_array(app_arr)) {
+            free(buffer);
+            perror("Error loading application array ");
+            exit(EXIT_FAILURE);
+        }
+        test = json_integer_value(json_object_get(jd,"Cd Total"));
+        newjd = json_pack("{s: s, s: i, s: O}","company",folder,"App Total", test, "applications",app_arr);
+        sprintf(buffer,"%s/App.json",folder);
+        fd = open(buffer, O_RDWR | O_CREAT, JSON_PERM);
+        if(fd == -1){
+            free(buffer);
+            perror("Error re-opening JSON file ");
+            exit(EXIT_FAILURE);
+        }
+        json_dumpfd(newjd, fd, JSON_INDENT(4));
+        close(fd);
+        char *bufferName = malloc(strlen(folder) + 9);// company + "Cd.json\0"
+        for(int i = 1;i <= test;i++){
+            sprintf(buffer,"%s/Cd1",folder);
+            sprintf(bufferName,"%s/App1",folder);
+            rename(buffer,bufferName);
+        }
+        free(buffer);
+        free(bufferName);
+
     }
 }
 
@@ -667,6 +747,10 @@ void statusApp(char *argv[],int argc){
 void updateApps(char *argv[],int argc){
     DIR *d;
     struct dirent *dir;
+    uint8_t options = NO_OPTIONS;
+    if(argc > 1){
+        options = testForOptions(argv[1],updateApps_sel);
+    }
     d = opendir(".");
     if(d == NULL){
         char *errorStr;
@@ -680,7 +764,12 @@ void updateApps(char *argv[],int argc){
     while ((dir = readdir(d)) != NULL) {
         if(dir->d_type == 4 && dir->d_name[0] != '.'){
             printf("%u : %s\n",dir->d_type, dir->d_name);
-            checkSubfolder(dir->d_name);
+            if(options == NO_OPTIONS){
+                checkSubfolder(dir->d_name);
+            }else if((options&UPDATEAPPS_RETRO) == UPDATEAPPS_RETRO){
+                checkFolderJSON(dir->d_name);
+            }
+            
         }
     }
     closedir(d);
