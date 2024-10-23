@@ -634,7 +634,12 @@ static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnd
     close(fd);
     free(buffer);
 }
-
+/**
+ * @brief This functions check quotation and execute the selected function
+ * 
+ * @param argv All argument in the command line
+ * @param argc Number argument in the command line
+ */
 void applicationCmd(char *argv[],int argc){
     for(int loop = 0; loop < CMD_NB; loop++){
         if(!strncmp(argv[0],commandStr[loop],strlen(commandStr[loop]))){
@@ -644,6 +649,12 @@ void applicationCmd(char *argv[],int argc){
     }
 }
 
+/**
+ * @brief This functions create entry for new application
+ * 
+ * @param argv All argument in the command line
+ * @param argc Number argument in the command line
+ */
 void newApp(char *argv[], int argc){
     for(int loop = 0; loop < argc; loop++){
         write(STDOUT_FILENO, argv[loop],strlen(argv[loop]));
@@ -695,6 +706,12 @@ void newApp(char *argv[], int argc){
     exit(EXIT_FAILURE);
 }
 
+/**
+ * @brief This functions display status for each application
+ * 
+ * @param argv All argument in the command line
+ * @param argc Number argument in the command line
+ */
 void statusApp(char *argv[],int argc){
     
     uint8_t options = testForOptions(argv[1],statusApp_sel);
@@ -744,6 +761,12 @@ void statusApp(char *argv[],int argc){
 
 }
 
+/**
+ * @brief This functions display every company with how many application was done
+ * 
+ * @param argv All argument in the command line
+ * @param argc Number argument in the command line
+ */
 void updateApps(char *argv[],int argc){
     DIR *d;
     struct dirent *dir;
@@ -779,6 +802,12 @@ void updateApps(char *argv[],int argc){
     
 }
 
+/**
+ * @brief This functions init json with pre-existing application
+ * 
+ * @param argv All argument in the command line
+ * @param argc Number argument in the command line
+ */
 void lsApp(char *argv[],int argc){
     //write(STDOUT_FILENO,"Im in",5);
     uint8_t selectedOptions = NO_OPTIONS;
@@ -817,6 +846,12 @@ void lsApp(char *argv[],int argc){
     exit(EXIT_SUCCESS);
 }
 
+/**
+ * @brief This functions display this message, helpApp helpApp for more specification
+ * 
+ * @param argv All argument in the command line
+ * @param argc Number argument in the command line
+ */
 void helpApp(char *argv[],int argc){
     char *output;
     int len;
