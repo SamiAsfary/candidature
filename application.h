@@ -27,6 +27,17 @@
 #define CMD_NB 5
 #define JSON_PERM (S_IRWXU|S_IRWXG|S_IRWXO)
 
+#define COLOUR_OFF   "\033[m"
+#define COLOUR_BLACK     "\033[30m"
+#define COLOUR_RED     "\033[31m"
+#define COLOUR_GREEN     "\033[32m"
+#define COLOUR_ORANGE     "\033[33m"
+#define COLOUR_BLUE     "\033[34m"
+#define COLOUR_PURPLE     "\033[35m"
+#define COLOUR_CYAN     "\033[36m"
+#define COLOUR_GRAY     "\033[37m"
+
+
 #define NO_OPTIONS 0b00000000
 
 #define NEWAPP_SPONTANIOUS   0b1 << 0

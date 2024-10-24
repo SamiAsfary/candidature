@@ -30,39 +30,39 @@ const char* commandHelpShort[CMD_NB] = {
  * 
  */
 const char* commandHelp[CMD_NB] = {
-    "newApp -[OPTIONS] COMPANY_NAME\r\n"
-    "\tCreate a new application for COMPANY_NAME with \"Applied to offer\" as a stating reason\r\n"
+    COLOUR_CYAN"newApp"COLOUR_GREEN" -[OPTIONS] COMPANY_NAME\r\n"COLOUR_OFF
+    "\tCreate a new application for"COLOUR_GREEN" COMPANY_NAME"COLOUR_OFF" with \"Applied to offer\" as a stating reason\r\n"
     "Options :\r\n"
-    "\t-s  Change starting reason to \"Spontanious application\"\r\n"
-    "\t-r  Change starting reason to \"Received proposition\"\r\n",
+    COLOUR_GREEN"\t-s"COLOUR_OFF"  Change starting reason to \"Spontanious application\"\r\n"
+    COLOUR_GREEN"\t-r"COLOUR_OFF"  Change starting reason to \"Received proposition\"\r\n",
     ////////////////////////////////////
-    "statusApp -OPTIONS COMPANY_NAME APPLICATION_NUMBER\r\n"
-    "\tDisplay current status of APPLICATION_NUMBERth at COMPANY_NAME\r\n"
-    "\tIf an option is specified update status of application number APPLICATION_NUMBER at COMPANY_NAME\r\n"
+    COLOUR_CYAN"statusApp"COLOUR_GREEN" -OPTIONS COMPANY_NAME APPLICATION_NUMBER\r\n"COLOUR_OFF
+    "\tDisplay current status of"COLOUR_GREEN" APPLICATION_NUMBER"COLOUR_OFF"th at"COLOUR_GREEN" COMPANY_NAME\r\n"COLOUR_OFF
+    "\tIf an option is specified update status of application number"COLOUR_GREEN" APPLICATION_NUMBER"COLOUR_OFF" at"COLOUR_GREEN" COMPANY_NAME"COLOUR_OFF"\r\n"
     "Options :\r\n"
-    "\t-n  Change ending reason to \"Offer Declined\"\r\n"
-    "\t-y  Change ending reason to \"Offer Accepted\"\r\n"
-    "\t-r  Change ending reason to \"Rejected\"\r\n"
-    "\t-g  Change ending reason to \"Ghosted\"\r\n"
-    "\t-h  Change last status to \"HR interview\"\r\n"
-    "\t-t  Change last status to \"Technical interview\"\r\n"
-    "\t-o  Change last status to \"Offer received\"\r\n",
+    COLOUR_GREEN"\t-n"COLOUR_OFF"  Change ending reason to \"Offer Declined\"\r\n"
+    COLOUR_GREEN"\t-y"COLOUR_OFF"  Change ending reason to \"Offer Accepted\"\r\n"
+    COLOUR_GREEN"\t-r"COLOUR_OFF"  Change ending reason to \"Rejected\"\r\n"
+    COLOUR_GREEN"\t-g"COLOUR_OFF"  Change ending reason to \"Ghosted\"\r\n"
+    COLOUR_GREEN"\t-h"COLOUR_OFF"  Change last status to \"HR interview\"\r\n"
+    COLOUR_GREEN"\t-t"COLOUR_OFF"  Change last status to \"Technical interview\"\r\n"
+    COLOUR_GREEN"\t-o"COLOUR_OFF"  Change last status to \"Offer received\"\r\n",
     ////////////////////////////////////
-    "lsApp -[OPTIONS] [COMPANY_NAME]\r\n"
+    COLOUR_CYAN"lsApp"COLOUR_GREEN" -[OPTIONS] [COMPANY_NAME]\r\n"COLOUR_OFF
     "\tDisplay a list of every company an application was started on.\r\n"
-    "\tIf a [COMPANY_NAME] is specified display each application for said company.\r\n"
+    "\tIf a "COLOUR_GREEN"[COMPANY_NAME]"COLOUR_OFF" is specified display each application for said company.\r\n"
     "Options :\r\n"
-    "\t-l  Also display application status for each application.\r\n",
+    COLOUR_GREEN"\t-l"COLOUR_OFF" Also display application status for each application.\r\n",
     ////////////////////////////////////
-    "updateApps -[OPTIONS] \r\n"
+    COLOUR_CYAN"updateApps"COLOUR_GREEN" -[OPTIONS] \r\n"COLOUR_OFF
     "\tInit Json in every company folder\r\n"
     "Options :\r\n"
-    "\t-d  Also check if the json is sync with the pre-existing application.\r\n"
-    "\t-r  Allow retro compatibility by changing Cd and candidature by App et application.\r\n",
+    COLOUR_GREEN"\t-d"COLOUR_OFF" Also check if the json is sync with the pre-existing application.\r\n"
+    COLOUR_GREEN"\t-r"COLOUR_OFF" Allow retro compatibility by changing Cd and candidature by App et application.\r\n",
     ////////////////////////////////////
-    "helpApp [COMMAND]\r\n"
+    COLOUR_CYAN"helpApp"COLOUR_GREEN" [COMMAND]\r\n"COLOUR_OFF
     "\tDisplay each command and their uses.\r\n"
-    "\tIf a [COMMAND] is entered display a longer explanation for it.\r\n"
+    "\tIf a"COLOUR_GREEN" [COMMAND]"COLOUR_OFF" is entered display a longer explanation for it.\r\n"
 };
 
 const char* commandStr[CMD_NB] = {
@@ -231,14 +231,14 @@ static void lsAppList1line(char* company){
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
-        perror("Error opening JSON file ");
+        perror(COLOUR_RED"Error opening JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
     if(!jd || !json_is_object(jd)) {
         free(buffer);
         close(fd);
-        perror("Error loading JSON file ");
+        perror(COLOUR_RED"Error loading JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     nbApp = (int) json_integer_value(json_object_get(jd,"App Total"));
@@ -246,7 +246,7 @@ static void lsAppList1line(char* company){
     if(!json_is_array(app_arr)) {
         free(buffer);
         close(fd);
-        perror("Error loading application array ");
+        perror(COLOUR_RED"Error loading application array "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     for(int index = 0; index < nbApp; index++){
@@ -254,7 +254,7 @@ static void lsAppList1line(char* company){
         if(!json_is_object(app)) {
             free(buffer);
             close(fd);
-            perror("Error loading application JSON ");
+            perror(COLOUR_RED"Error loading application JSON "COLOUR_OFF);
             exit(EXIT_FAILURE);
         }
         if(strcmp("Ongoing",json_string_value(json_object_get(app,"End"))) != 0){
@@ -262,7 +262,7 @@ static void lsAppList1line(char* company){
         }
     }
     outputStr = malloc(strlen(company) + 4 + 6); // company + '\t' + total + '\t' + ongoing + \r\n\0
-    sprintf(outputStr,"%s\t\t%d\t%d\r\n",company,nbApp,nbAppOpen);
+    sprintf(outputStr,COLOUR_CYAN"%s"COLOUR_OFF"\t\t%d\t%d\r\n",company,nbApp,nbAppOpen);
     write(STDOUT_FILENO,outputStr,strlen(outputStr));
 }
 
@@ -286,7 +286,7 @@ static void initJSON(char *company, char *start){
     int fd = open(buffer, O_RDWR | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
-        perror("Error creating JSON file ");
+        perror(COLOUR_RED"Error creating JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     json_dumpfd(jd, fd, JSON_INDENT(4));
@@ -328,14 +328,14 @@ static void addingJSON(char *company, char *start,int index){
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
-        perror("Error opening JSON file ");
+        perror(COLOUR_RED"Error opening JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     json_t * jd = json_loadfd(fd,JSON_DECODE_ANY, &error);
     if(!jd) {
         free(buffer);
         close(fd);
-        perror("Error loading JSON file ");
+        perror(COLOUR_RED"Error loading JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     close(fd);
@@ -343,7 +343,7 @@ static void addingJSON(char *company, char *start,int index){
     fd = open(buffer, O_RDWR | O_TRUNC | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
-        perror("Error re-opening JSON file ");
+        perror(COLOUR_RED"Error re-opening JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     json_t *arr1 = json_array(); 
@@ -378,7 +378,7 @@ static void checkSubfolder(char *folder){
     if(d == NULL){
         char *errorStr;
         errorStr = malloc(strlen("Error while opening x folder ") + strlen(folder));
-        sprintf(errorStr,"Error while opening %s folder ",folder);
+        sprintf(errorStr,COLOUR_RED"Error while opening"COLOUR_PURPLE" %s"COLOUR_RED" folder "COLOUR_OFF,folder);
         perror(errorStr);
         free(errorStr);
         exit(EXIT_FAILURE);
@@ -391,7 +391,7 @@ static void checkSubfolder(char *folder){
         }
     }
     closedir(d);
-    printf("In %s there is %u App\n", folder, nbApp);
+    //printf("In %s there is %u App\n", folder, nbApp);
     if(isJsonHere){
         
     }else{
@@ -415,7 +415,7 @@ static void checkFolderJSON(char *folder){
     if(d == NULL){
         char *errorStr;
         errorStr = malloc(strlen("Error while opening x folder ") + strlen(folder));
-        sprintf(errorStr,"Error while opening %s folder ",folder);
+        sprintf(errorStr,COLOUR_RED"Error while opening"COLOUR_PURPLE" %s"COLOUR_RED" folder "COLOUR_OFF,folder);
         perror(errorStr);
         free(errorStr);
         exit(EXIT_FAILURE);
@@ -439,7 +439,7 @@ static void checkFolderJSON(char *folder){
         if(fd == -1){
             char *errorStr;
             errorStr = malloc(strlen("Error while opening x file ") + strlen(buffer));
-            sprintf(errorStr,"Error while opening %s file ",buffer);
+            sprintf(errorStr,COLOUR_RED"Error while opening"COLOUR_PURPLE" %s"COLOUR_RED" file "COLOUR_OFF,buffer);
             free(buffer);
             perror(errorStr);
             exit(EXIT_FAILURE);
@@ -448,14 +448,14 @@ static void checkFolderJSON(char *folder){
         if(!jd || !json_is_object(jd)) {
             free(buffer);
             close(fd);
-            perror("Error loading JSON file ");
+            perror(COLOUR_RED"Error loading JSON file "COLOUR_OFF);
             exit(EXIT_FAILURE);
         }
         close(fd);
         app_arr = json_object_get(jd,"applications");
         if(!json_is_array(app_arr)) {
             free(buffer);
-            perror("Error loading application array ");
+            perror(COLOUR_RED"Error loading application array "COLOUR_OFF);
             exit(EXIT_FAILURE);
         }
         test = json_integer_value(json_object_get(jd,"Cd Total"));
@@ -464,7 +464,7 @@ static void checkFolderJSON(char *folder){
         fd = open(buffer, O_RDWR | O_CREAT, JSON_PERM);
         if(fd == -1){
             free(buffer);
-            perror("Error re-opening JSON file ");
+            perror(COLOUR_RED"Error re-opening JSON file "COLOUR_OFF);
             exit(EXIT_FAILURE);
         }
         json_dumpfd(newjd, fd, JSON_INDENT(4));
@@ -495,7 +495,7 @@ static void displayApp(char* company, int index){
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
-        perror("Error opening JSON file ");
+        perror(COLOUR_RED"Error opening JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     json_t *jd, *app_arr, *app, *steps, *string;
@@ -503,28 +503,28 @@ static void displayApp(char* company, int index){
     if(!jd || !json_is_object(jd)) {
         free(buffer);
         close(fd);
-        perror("Error loading JSON file ");
+        perror(COLOUR_RED"Error loading JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     app_arr = json_object_get(jd,"applications");
     if(!json_is_array(app_arr)) {
         free(buffer);
         close(fd);
-        perror("Error loading application array ");
+        perror(COLOUR_RED"Error loading application array "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     app = json_array_get(app_arr,index);
     if(!json_is_object(app)) {
         free(buffer);
         close(fd);
-        perror("Error loading application JSON ");
+        perror(COLOUR_RED"Error loading application JSON "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     steps = json_object_get(app,"Step");
     if(!json_is_array(steps)) {
         free(buffer);
         close(fd);
-        perror("Error loading steps array");
+        perror(COLOUR_RED"Error loading steps array"COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     buffer = realloc(buffer,strlen(company)+28); // The XXth application for company\r\n\0
@@ -548,20 +548,20 @@ static void displayApp(char* company, int index){
         break;
     }
 
-    sprintf(buffer,"The %d%s application for %s\r\n",index+1,order,company);
+    sprintf(buffer,COLOUR_GREEN"The %d%s application for"COLOUR_PURPLE" %s\r\n"COLOUR_OFF,index+1,order,company);
     write(STDOUT_FILENO,buffer,strlen(buffer));
     free(buffer);
-    write(STDOUT_FILENO,"Started with : ",strlen("Started with : "));
+    write(STDOUT_FILENO,COLOUR_CYAN"Started with"COLOUR_OFF" : ",strlen(COLOUR_GREEN"Started with"COLOUR_OFF" : "));
     string = json_object_get(app,"Start");
     write(STDOUT_FILENO,json_string_value(string),json_string_length(string));
-    write(STDOUT_FILENO,"\r\nCurrent Steps : [",strlen("\r\nCurrent Steps : ["));
+    write(STDOUT_FILENO,COLOUR_CYAN"\r\nCurrent Steps"COLOUR_OFF" : [",strlen(COLOUR_CYAN"\r\nCurrent Steps"COLOUR_OFF" : ["));
     for(int i = 0; i < (int)json_array_size(steps);i++){
         write(STDOUT_FILENO,json_string_value(json_array_get(steps,i)),json_string_length(json_array_get(steps,i)));
         if(i != (int)json_array_size(steps)-1){
             write(STDOUT_FILENO,", ",strlen(", "));
         }
     }
-    write(STDOUT_FILENO,"]\r\nCurrent ending Status : ",strlen("]\r\nCurrent ending Status : "));
+    write(STDOUT_FILENO,"]"COLOUR_ORANGE"\r\nCurrent ending Status"COLOUR_OFF" : ",strlen("]"COLOUR_ORANGE"\r\nCurrent ending Status"COLOUR_OFF" : "));
     string = json_object_get(app,"End");
     write(STDOUT_FILENO,json_string_value(string),json_string_length(string));
     write(STDOUT_FILENO,"\n",strlen("\n"));
@@ -583,7 +583,7 @@ static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnd
     int fd = open(buffer, O_RDONLY | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
-        perror("Error opening JSON file ");
+        perror(COLOUR_RED"Error opening JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     json_t *jd, *app_arr, *app, *steps;
@@ -591,21 +591,21 @@ static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnd
     if(!jd || !json_is_object(jd)) {
         free(buffer);
         close(fd);
-        perror("Error loading JSON file ");
+        perror(COLOUR_RED"Error loading JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     app_arr = json_object_get(jd,"applications");
     if(!json_is_array(app_arr)) {
         free(buffer);
         close(fd);
-        perror("Error loading application array ");
+        perror(COLOUR_RED"Error loading application array "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     app = json_array_get(app_arr,index);
     if(!json_is_object(app)) {
         free(buffer);
         close(fd);
-        perror("Error loading application JSON ");
+        perror(COLOUR_RED"Error loading application JSON "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     if(isAppEnding == 0){
@@ -613,7 +613,7 @@ static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnd
         if(!json_is_array(steps)) {
             free(buffer);
             close(fd);
-            perror("Error loading steps array");
+            perror(COLOUR_RED"Error loading steps array"COLOUR_OFF);
             exit(EXIT_FAILURE);
         }
         json_array_append(steps,json_string(addon));
@@ -627,7 +627,7 @@ static void addStatusApp(char* company, int index, char* addon, uint8_t isAppEnd
     fd = open(buffer, O_RDWR | O_TRUNC | O_CREAT, JSON_PERM);
     if(fd == -1){
         free(buffer);
-        perror("Error re-opening JSON file ");
+        perror(COLOUR_RED"Error re-opening JSON file "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     json_dumpfd(jd, fd, JSON_INDENT(4));
@@ -695,7 +695,7 @@ void newApp(char *argv[], int argc){
         i++;
         sprintf(path,"%s/App%d",company,i);
     }while( stat(path, &st) == 0 && i < 9);
-    printf("\npath : %s\n",path);
+    //printf("\npath : %s\n",path);
     addingJSON(company,candStart,i);
     if (mkdir(path, JSON_PERM) == 0){
         write(STDOUT_FILENO,"The folder as been created\n",strlen("The folder as been created\n"));
@@ -717,7 +717,7 @@ void statusApp(char *argv[],int argc){
     uint8_t options = testForOptions(argv[1],statusApp_sel);
 
     if(argc < 3 || (options != NO_OPTIONS && argc < 4)){
-        perror("Not enough parameter ");
+        perror(COLOUR_RED"Not enough parameter "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
 
@@ -776,17 +776,13 @@ void updateApps(char *argv[],int argc){
     }
     d = opendir(".");
     if(d == NULL){
-        char *errorStr;
-        errorStr = malloc(strlen("Error while current folder ")+1);
-        sprintf(errorStr,"Error while opening current folder ");
-        perror(errorStr);
-        free(errorStr);
+        perror(COLOUR_RED"Error while opening current folder "COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     if (d) {
     while ((dir = readdir(d)) != NULL) {
         if(dir->d_type == 4 && dir->d_name[0] != '.'){
-            printf("%u : %s\n",dir->d_type, dir->d_name);
+            //printf("%u : %s\n",dir->d_type, dir->d_name);
             if(options == NO_OPTIONS){
                 checkSubfolder(dir->d_name);
             }else if((options&UPDATEAPPS_RETRO) == UPDATEAPPS_RETRO){
@@ -809,25 +805,22 @@ void updateApps(char *argv[],int argc){
  * @param argc Number argument in the command line
  */
 void lsApp(char *argv[],int argc){
-    //write(STDOUT_FILENO,"Im in",5);
     uint8_t selectedOptions = NO_OPTIONS;
     if(argc > 1){
         selectedOptions = testForOptions(argv[1],lsApp_sel);
     }
-    //write(STDOUT_FILENO,"test\n",5);
     DIR *dp;
     struct dirent *ep;
     int count = 0;
     dp = opendir ("./");
     if(dp == NULL){
-        perror ("Couldn't open the directory");
+        perror(COLOUR_RED"Couldn't open the directory"COLOUR_OFF);
         exit(EXIT_FAILURE);
     }
     if((selectedOptions&LSAPP_LIST) == LSAPP_LIST){
-        write(STDOUT_FILENO,"\n\rcompany\t\ttotal\tongoing\n\r",26);
+        write(STDOUT_FILENO,COLOUR_GREEN"company\t\t"COLOUR_BLUE"total\tongoing\n\r"COLOUR_OFF,strlen(COLOUR_GREEN"company\t\t"COLOUR_BLUE"total\tongoing\n\r"COLOUR_OFF));
     }
     while ((ep = readdir (dp)) != NULL){
-        //write(STDOUT_FILENO,"help\n",5);
         if(ep->d_type == 4 && ep->d_name[0] != '.'){
             if((selectedOptions&LSAPP_LIST) == LSAPP_LIST){
                 lsAppList1line(ep->d_name);
@@ -859,7 +852,7 @@ void helpApp(char *argv[],int argc){
     if(argc < 2){
         for(int i = 0; i < CMD_NB; i++){
 
-            len = sprintf(output,"%s : %s\r\n",commandStr[i],commandHelpShort[i]);
+            len = sprintf(output,COLOUR_GREEN"%s"COLOUR_OFF" : "COLOUR_CYAN"%s\r\n"COLOUR_OFF,commandStr[i],commandHelpShort[i]);
             write(STDOUT_FILENO,output,len);
         }
     }else if(argc == 2){
@@ -872,7 +865,7 @@ void helpApp(char *argv[],int argc){
         write(STDOUT_FILENO,commandHelp[i],strlen(commandHelp[i]));
     }else{
         free(output);
-        perror("Too much argument");
+        perror(COLOUR_RED"Too much argument"COLOUR_OFF);
         write(STDOUT_FILENO,commandHelp[4],strlen(commandHelp[4]));
         exit(EXIT_FAILURE);
     }
